@@ -1,14 +1,13 @@
+
 package com.mhmstore.api.repository;
 
 import com.mhmstore.api.model.Producto;
+import org.springframework.data.jpa.repository.JpaRepository;
 
-import java.util.List;
 import java.util.Optional;
 
-public interface ProductoRepository {
-    List<Producto> findAll();
-    Optional<Producto> findById(Long id);
+public interface ProductoRepository
+        extends JpaRepository<Producto, Long> {
+
     Optional<Producto> findByCodigoIgnoreCase(String codigo);
-    Producto save(Producto producto);
-    void deleteById(Long id);
 }
