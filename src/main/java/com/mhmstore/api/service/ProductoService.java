@@ -1,4 +1,3 @@
-
 package com.mhmstore.api.service;
 
 import com.mhmstore.api.dto.ProductoPatchRequest;
@@ -15,6 +14,8 @@ public interface ProductoService {
             Boolean stockBajo,
             String q
     );
+
+    List<ProductoResponse> buscarProductosConStockBajo(Integer limite);
 
     ProductoResponse obtener(Long id);
 

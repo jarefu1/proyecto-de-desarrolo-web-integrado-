@@ -1,4 +1,3 @@
-
 package com.mhmstore.api.service;
 
 import com.mhmstore.api.model.Almacen;
@@ -6,6 +5,7 @@ import com.mhmstore.api.repository.AlmacenRepository;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -22,6 +22,7 @@ public class AlmacenServiceImpl implements AlmacenService {
     public List<Almacen> listar() {
         return almacenRepository.findAll();
     }
+
 
     @Override
     public Almacen obtenerPorId(Long id) {

@@ -108,6 +108,19 @@ class ProductoServiceImplTest {
         verify(repository, never()).save(any(Producto.class));
         verifyNoInteractions(categoriaRepository, almacenRepository);
     }
+    
+@Test
+void buscarProductosConStockBajo_sinResultados_devuelveListaVacia() {
+    when(repository.buscarProductosConStockBajo(5))
+            .thenReturn(java.util.List.of());
+
+    var resultado = service.buscarProductosConStockBajo(5);
+
+    assertNotNull(resultado);
+    assertTrue(resultado.isEmpty());
+
+    verify(repository).buscarProductosConStockBajo(5);
+}
 
     private ProductoRequest crearRequest() {
         ProductoRequest request = new ProductoRequest();
@@ -138,4 +151,6 @@ class ProductoServiceImplTest {
         almacen.setUbicacion("Almacén principal");
         return almacen;
     }
+    
+
 }
