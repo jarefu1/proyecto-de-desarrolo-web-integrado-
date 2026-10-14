@@ -64,6 +64,19 @@ public class ProductoServiceImpl implements ProductoService {
                 .toList();
     }
 
+    
+    @Override
+    @Transactional(readOnly = true)
+    public List<ProductoResponse> buscarProductosConStockBajo(
+            Integer limite) {
+
+        return productoRepository
+                .buscarProductosConStockBajo(limite)
+                .stream()
+                .map(this::toResponse)
+                .toList();
+    }
+
     @Override
     @Transactional(readOnly = true)
     public ProductoResponse obtener(Long id) {
