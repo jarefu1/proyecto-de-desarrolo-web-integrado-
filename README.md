@@ -195,3 +195,27 @@ Java, Spring Boot, Spring Data JPA, MySQL, Jakarta Validation, Maven, Swagger/Op
 
 Persistencia de datos, gestión de productos, categorías y almacenes, validaciones de entrada y tratamiento de errores de la API.
 
+### Consulta de productos con stock bajo mediante JPQL
+
+Se implementó una consulta utilizando JPQL en `ProductoRepository` para identificar los productos cuyo stock disponible es menor o igual a un límite determinado.
+
+**Endpoint:** `GET /api/v1/productos/stock-bajo?limite=5`
+
+**Parámetro:**
+- `limite`: cantidad máxima de unidades para considerar un producto con stock bajo. Si no se especifica, se utiliza el valor predeterminado de `5`.
+
+**Funcionamiento de la consulta:**
+- Filtra los productos cuya cantidad disponible sea menor o igual al límite indicado.
+- Ordena los resultados de menor a mayor cantidad disponible.
+- Devuelve una lista de objetos `ProductoResponse`.
+
+**Implementación:** la consulta se encuentra en `ProductoRepository` y su funcionalidad se expone a través de `ProductoService`, `ProductoServiceImpl` y `ProductoController`.
+
+**Ejemplo de solicitud:**
+
+```http
+GET http://localhost:8080/api/v1/productos/stock-bajo?limite=5
+```
+
+**Respuesta esperada:** HTTP `200 OK`, con una lista de productos que cumplen la condición. Si no existen productos que cumplan el límite, se devuelve una lista vacía.
+
