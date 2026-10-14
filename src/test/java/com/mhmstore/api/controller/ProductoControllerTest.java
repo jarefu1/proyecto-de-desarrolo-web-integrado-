@@ -73,7 +73,7 @@ class ProductoControllerTest {
 
         String json = """
                 {
-                  "codigo": "MOCH0010",
+                  "codigo": "MOCH0011",
                   "modelo": "Mochila Urbana",
                   "color": "Negro",
                   "categoriaId": %d,
