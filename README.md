@@ -195,3 +195,34 @@ Java, Spring Boot, Spring Data JPA, MySQL, Jakarta Validation, Maven, Swagger/Op
 
 Persistencia de datos, gestión de productos, categorías y almacenes, validaciones de entrada y tratamiento de errores de la API.
 
+
+## Módulo de operación transaccional de inventario
+
+Este módulo implementa el control seguro de existencias (entradas y salidas de stock) garantizando la atomicidad de las operaciones en la base de datos mediante `@Transactional`.
+
+### Funcionalidades implementadas
+
+- **Servicio de inventario (`InventarioService` e `InventarioServiceImpl`):** lógica de negocio anotada con `@Transactional` para registrar salidas y entradas de stock de forma atómica.
+- **Validación de cantidades positivas:** rechazo inmediato (`400 Bad Request`) cuando la cantidad solicitada es nula, cero o negativa.
+- **Control de stock disponible:** verificación previa de existencias antes de descontar stock, devolviendo `409 Conflict` cuando la cantidad solicitada supera el stock actual y evitando cambios parciales en la base de datos.
+- **Controlador REST (`InventarioController`):** exposición de los endpoints transaccionales de inventario.
+- **Pruebas automatizadas (`InventarioServiceImplTest`):** pruebas unitarias con JUnit 5 y Mockito para validar salidas exitosas, bloqueo por stock insuficiente sin modificar el producto y rechazo de cantidades inválidas.
+
+### Endpoints de inventario
+
+| Método | Endpoint | Descripción |
+| ------ | -------- | ----------- |
+| PATCH | `/api/v1/inventario/{productoId}/salida` | Descuenta stock de un producto de forma transaccional |
+| PATCH | `/api/v1/inventario/{productoId}/entrada` | Incrementa stock de un producto de forma transaccional |
+
+### Documentación de resultados en Postman
+
+1. **Salida de stock válida (`200 OK`):**
+   - **Petición:** `PATCH /api/v1/inventario/1/salida` con body `{"cantidad": 3}` (o parámetro `?cantidad=3`).
+   - **Resultado:** Descuenta las unidades solicitadas y devuelve el `ProductoResponse` con la `cantidad` actualizada.
+2. **Error por stock insuficiente (`409 Conflict`):**
+   - **Petición:** `PATCH /api/v1/inventario/1/salida` con body `{"cantidad": 999}`.
+   - **Resultado:** La operación falla de forma segura, `@Transactional` evita cambios parciales y el stock del producto permanece intacto.
+3. **Error por cantidad no positiva (`400 Bad Request`):**
+   - **Petición:** `PATCH /api/v1/inventario/1/salida` con body `{"cantidad": 0}`.
+   - **Resultado:** Rechaza la solicitud antes de modificar el registro en la base de datos.
