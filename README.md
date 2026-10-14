@@ -172,3 +172,26 @@ Además, se utiliza **inyección de dependencias mediante constructor** para man
 * MockMvc
 * Maven
 * Postman
+
+## Módulo de persistencia, productos y almacenes
+
+Este módulo forma parte del sistema de inventario MHM STORE, desarrollado con Java y Spring Boot para gestionar los productos de una tienda de mochilas.
+
+### Funcionalidades implementadas
+
+- **Persistencia con JPA y MySQL:** almacenamiento de productos, categorías y almacenes en la base de datos.
+- **Gestión de productos:** operaciones CRUD mediante los endpoints GET, POST, PUT, PATCH y DELETE.
+- **Gestión de categorías y almacenes:** registro, consulta, actualización y eliminación de información.
+- **Validaciones:** comprobación de campos obligatorios, longitudes, precios y cantidades.
+- **Manejo de errores HTTP:** respuestas para solicitudes inválidas (400), recursos inexistentes (404) y conflictos de datos (409).
+- **Filtros de productos:** búsqueda por almacén, disponibilidad, stock bajo y texto de búsqueda.
+- **Documentación y pruebas:** comprobación de endpoints y respuestas mediante Swagger, además de pruebas automatizadas con Maven.
+
+### Tecnologías utilizadas
+
+Java, Spring Boot, Spring Data JPA, MySQL, Jakarta Validation, Maven, Swagger/OpenAPI y Git.
+
+### Responsabilidad del módulo
+
+Persistencia de datos, gestión de productos, categorías y almacenes, validaciones de entrada y tratamiento de errores de la API.
+
