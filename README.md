@@ -252,3 +252,102 @@ GET http://localhost:8080/api/v1/productos/stock-bajo?limite=5
 **Respuesta esperada:** HTTP `200 OK`, con una lista de productos que cumplen la condición. Si no existen productos que cumplan el límite, se devuelve una lista vacía.
 
 
+
+---
+
+## Seguridad JWT (integración de Ángeles)
+
+Se agregó autenticación stateless con JWT, contraseñas BCrypt y los roles `ADMIN` y `TRABAJADOR`.
+
+### 1. Requisitos y configuración
+
+Antes de iniciar la aplicación, configura una clave JWT Base64 de al menos 32 bytes. No publiques la clave ni las contraseñas en Git.
+
+**Git Bash:**
+
+```bash
+export JWT_SECRET_BASE64="$(openssl rand -base64 32)"
+export BOOTSTRAP_ADMIN_EMAIL="admin@mhmstore.com"
+export BOOTSTRAP_ADMIN_PASSWORD="CambiaEstaClavePorUnaSegura123!"
+export BOOTSTRAP_WORKER_EMAIL="trabajador@mhmstore.com"
+export BOOTSTRAP_WORKER_PASSWORD="CambiaEstaOtraClave123!"
+./mvnw spring-boot:run
+```
+
+En Windows PowerShell, genera una clave compatible con Windows PowerShell/.NET así:
+
+```powershell
+$bytes = New-Object byte[] 32
+$rng = [System.Security.Cryptography.RandomNumberGenerator]::Create()
+$rng.GetBytes($bytes)
+$rng.Dispose()
+$env:JWT_SECRET_BASE64 = [Convert]::ToBase64String($bytes)
+$env:BOOTSTRAP_ADMIN_EMAIL = "admin@mhmstore.com"
+$env:BOOTSTRAP_ADMIN_PASSWORD = "CambiaEstaClavePorUnaSegura123!"
+$env:BOOTSTRAP_WORKER_EMAIL = "trabajador@mhmstore.com"
+$env:BOOTSTRAP_WORKER_PASSWORD = "CambiaEstaOtraClave123!"
+./mvnw.cmd spring-boot:run
+```
+
+Las contraseñas para las cuentas nuevas deben tener al menos 12 caracteres y no pueden tener espacios al inicio ni al final.
+
+El inicializador crea el administrador y/o trabajador solamente si se proporcionan las variables correspondientes y el correo todavía no existe. Las contraseñas se guardan con BCrypt. Una vez creadas las cuentas, borra las variables de bootstrap o déjalas vacías. Para ambientes reales, utiliza un gestor de secretos y un procedimiento controlado de alta de usuarios.
+
+La aplicación mantiene la configuración MySQL existente (`mhm_store`) y Hibernate crea/actualiza la tabla `usuarios` con `ddl-auto=update`.
+
+### 2. Iniciar sesión
+
+`POST http://localhost:8080/api/v1/auth/login`
+
+```json
+{
+  "email": "admin@mhmstore.com",
+  "contrasena": "CambiaEstaClavePorUnaSegura123!"
+}
+```
+
+La respuesta contiene `token`, `tipo` (`Bearer`), `email` y `rol`. En las siguientes solicitudes añade el encabezado:
+
+```http
+Authorization: Bearer PEGA_AQUI_EL_TOKEN
+```
+
+### 3. Reglas de autorización actuales
+
+- `POST /api/v1/auth/login`: público.
+- `POST /api/v1/usuarios`: requiere token JWT de `ADMIN`; crea un usuario con rol `ADMIN` o `TRABAJADOR`.
+- `/api/v1/usuarios/**`: reservado a `ADMIN`.
+- `GET /api/v1/productos/**` y otros GET de `/api/v1/**`: accesibles a `ADMIN` y `TRABAJADOR`.
+- `POST`, `PUT`, `PATCH` y `DELETE` de `/api/v1/**`: requieren `ADMIN`.
+- Swagger UI y `/v3/api-docs/**`: públicos para facilitar la documentación.
+
+Ejemplo para crear un trabajador (envía el token de administrador en `Authorization: Bearer ...`):
+
+`POST http://localhost:8080/api/v1/usuarios`
+
+```json
+{
+  "nombre": "Nuevo trabajador",
+  "email": "nuevo@mhmstore.com",
+  "contrasena": "ClaveSegura123",
+  "rol": "TRABAJADOR"
+}
+```
+
+La contraseña debe tener al menos 12 caracteres y no puede contener espacios al principio ni al final. La API guarda únicamente el hash BCrypt y nunca devuelve la contraseña. Un correo ya registrado devuelve `409 Conflict`; los datos inválidos devuelven `400 Bad Request`.
+- `401`: falta autenticación válida o el token no es válido.
+- `403`: usuario autenticado sin permisos suficientes.
+
+Esta es una política inicial conservadora: todas las escrituras de la API están restringidas a ADMIN. Ajusta las reglas por ruta si el equipo decide permitir operaciones concretas a TRABAJADOR.
+
+### 4. Pruebas manuales recomendadas en Postman
+
+1. Login con ADMIN y con TRABAJADOR: debe responder `200` y devolver un JWT.
+2. `GET http://localhost:8080/api/v1/productos` sin token: debe responder `401`.
+3. El mismo GET con token de cualquiera de los roles: debe responder `200`.
+4. `DELETE http://localhost:8080/api/v1/productos/1` con token TRABAJADOR: debe responder `403`.
+5. El DELETE con token ADMIN y un producto existente: debe responder `204`.
+6. Modifica un carácter del token y repite un GET protegido: debe responder `401`.
+7. Contraseña incorrecta en login: debe responder `401`.
+
+Ejecuta las pruebas existentes y revisa los tests HTTP: al proteger rutas, los tests anteriores que no envíen autenticación deberán adaptarse con `spring-security-test` o con tokens de prueba. No se ha afirmado que el build esté verificado hasta ejecutar Maven en tu entorno.
