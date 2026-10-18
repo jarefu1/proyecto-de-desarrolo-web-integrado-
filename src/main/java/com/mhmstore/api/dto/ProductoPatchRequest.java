@@ -3,7 +3,6 @@ package com.mhmstore.api.dto;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Digits;
 import jakarta.validation.constraints.Min;
-import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Size;
 
@@ -11,15 +10,12 @@ import java.math.BigDecimal;
 
 public class ProductoPatchRequest {
 
-    @NotBlank(message = "El código no puede estar vacío")
     @Size(max = 12, message = "El código no puede superar los 12 caracteres")
     private String codigo;
 
-    @NotBlank(message = "El modelo no puede estar vacío")
     @Size(max = 80, message = "El modelo no puede superar los 80 caracteres")
     private String modelo;
 
-    @NotBlank(message = "El color no puede estar vacío")
     @Size(max = 30, message = "El color no puede superar los 30 caracteres")
     private String color;
 
@@ -40,59 +36,24 @@ public class ProductoPatchRequest {
     public ProductoPatchRequest() {
     }
 
-    public String getCodigo() {
-        return codigo;
-    }
+    public String getCodigo() { return codigo; }
+    public void setCodigo(String codigo) { this.codigo = codigo; }
 
-    public void setCodigo(String codigo) {
-        this.codigo = codigo;
-    }
+    public String getModelo() { return modelo; }
+    public void setModelo(String modelo) { this.modelo = modelo; }
 
-    public String getModelo() {
-        return modelo;
-    }
+    public String getColor() { return color; }
+    public void setColor(String color) { this.color = color; }
 
-    public void setModelo(String modelo) {
-        this.modelo = modelo;
-    }
+    public Long getCategoriaId() { return categoriaId; }
+    public void setCategoriaId(Long categoriaId) { this.categoriaId = categoriaId; }
 
-    public String getColor() {
-        return color;
-    }
+    public BigDecimal getPrecio() { return precio; }
+    public void setPrecio(BigDecimal precio) { this.precio = precio; }
 
-    public void setColor(String color) {
-        this.color = color;
-    }
+    public Integer getCantidad() { return cantidad; }
+    public void setCantidad(Integer cantidad) { this.cantidad = cantidad; }
 
-    public Long getCategoriaId() {
-        return categoriaId;
-    }
-
-    public void setCategoriaId(Long categoriaId) {
-        this.categoriaId = categoriaId;
-    }
-
-    public BigDecimal getPrecio() {
-        return precio;
-    }
-
-    public void setPrecio(BigDecimal precio) {
-        this.precio = precio;
-    }
-
-    public Integer getCantidad() {
-        return cantidad;
-    }
-
-    public void setCantidad(Integer cantidad) {
-        this.cantidad = cantidad;
-    }
-
-    public Long getAlmacenId() {
-        return almacenId;
-    }
-
-    public void setAlmacenId(Long almacenId) {
-        this.almacenId = almacenId;
-    }
+    public Long getAlmacenId() { return almacenId; }
+    public void setAlmacenId(Long almacenId) { this.almacenId = almacenId; }
 }

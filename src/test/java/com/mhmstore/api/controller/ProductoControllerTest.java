@@ -1,6 +1,5 @@
 package com.mhmstore.api.controller;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.mhmstore.api.model.Almacen;
 import com.mhmstore.api.model.Categoria;
 import com.mhmstore.api.repository.AlmacenRepository;
@@ -12,9 +11,11 @@ import org.junit.jupiter.api.Test;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.transaction.annotation.Transactional;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -22,6 +23,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @SpringBootTest
 @AutoConfigureMockMvc
+@Transactional
 class ProductoControllerTest {
 
     @Autowired
@@ -39,7 +41,7 @@ class ProductoControllerTest {
     private Long categoriaId;
     private Long almacenId;
 
-       @BeforeEach
+    @BeforeEach
     void prepararDatos() {
         Categoria categoria = categoriaRepository.findAll()
                 .stream()
@@ -68,7 +70,9 @@ class ProductoControllerTest {
 
         almacenId = almacen.getId();
     }
+
     @Test
+    @WithMockUser(roles = "ADMIN") // Simula un administrador para crear productos
     void crearProducto_debeResponder201() throws Exception {
 
         String json = """
@@ -90,6 +94,7 @@ class ProductoControllerTest {
     }
 
     @Test
+    @WithMockUser(roles = "TRABAJADOR") // Simula un trabajador para consultar
     void obtenerProductoInexistente_debeResponder404() throws Exception {
 
         mockMvc.perform(get("/api/v1/productos/99999"))
