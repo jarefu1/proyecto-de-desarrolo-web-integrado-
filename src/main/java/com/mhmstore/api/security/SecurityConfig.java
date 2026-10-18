@@ -13,8 +13,10 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 
 @Configuration
 public class SecurityConfig {
-    @Bean
-    public PasswordEncoder passwordEncoder() { return new BCryptPasswordEncoder(); }
+@Bean
+public PasswordEncoder passwordEncoder() {
+    return org.springframework.security.crypto.password.NoOpPasswordEncoder.getInstance();
+}
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http, JwtAuthenticationFilter jwtFilter)
