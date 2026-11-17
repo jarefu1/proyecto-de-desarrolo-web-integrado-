@@ -2,6 +2,9 @@ package com.mhmstore.api.model;
 
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
+import java.util.EnumSet;
+import java.util.HashSet;
+import java.util.Set;
 
 @Entity
 @Table(name = "usuarios", uniqueConstraints = {
@@ -29,14 +32,29 @@ public class Usuario {
     @Column(nullable = false)
     private LocalDateTime fechaRegistro;
 
+    @ElementCollection(fetch = FetchType.EAGER)
+    @CollectionTable(
+        name = "usuario_permisos",
+        joinColumns = @JoinColumn(name = "usuario_id")
+    )
+    @Enumerated(EnumType.STRING)
+    @Column(name = "permiso", length = 50, nullable = false)
+    private Set<Permiso> permisos = new HashSet<>();
+
     public Usuario() {}
 
     @PrePersist
     public void antesDeGuardar() {
-        if (fechaRegistro == null) fechaRegistro = LocalDateTime.now();
+        if (fechaRegistro == null) {
+            fechaRegistro = LocalDateTime.now();
+        }
+        if (rol == Rol.ADMIN && (permisos == null || permisos.isEmpty())) {
+            permisos = EnumSet.allOf(Permiso.class);
+        }
     }
 
     public Long getId() { return id; }
+    public void setId(Long id) { this.id = id; }
     public String getNombre() { return nombre; }
     public void setNombre(String nombre) { this.nombre = nombre; }
     public String getEmail() { return email; }
@@ -46,4 +64,20 @@ public class Usuario {
     public Rol getRol() { return rol; }
     public void setRol(Rol rol) { this.rol = rol; }
     public LocalDateTime getFechaRegistro() { return fechaRegistro; }
+    public void setFechaRegistro(LocalDateTime fechaRegistro) { this.fechaRegistro = fechaRegistro; }
+
+    public Set<Permiso> getPermisos() {
+        return permisos;
+    }
+
+    public void setPermisos(Set<Permiso> permisos) {
+        this.permisos = permisos != null ? new HashSet<>(permisos) : new HashSet<>();
+    }
+
+    public boolean tienePermiso(Permiso permiso) {
+        if (this.rol == Rol.ADMIN) {
+            return true;
+        }
+        return this.permisos != null && this.permisos.contains(permiso);
+    }
 }
