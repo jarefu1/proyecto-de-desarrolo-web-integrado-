@@ -1,5 +1,7 @@
 package com.mhmstore.api.security;
 
+import com.mhmstore.api.model.Permiso;
+import com.mhmstore.api.model.Rol;
 import com.mhmstore.api.model.Usuario;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
@@ -7,7 +9,10 @@ import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
 import javax.crypto.SecretKey;
 import java.util.Date;
+import java.util.EnumSet;
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -39,8 +44,16 @@ public class JwtService {
     public String generarToken(Usuario usuario) {
         Date ahora = new Date();
         Date expiracion = new Date(ahora.getTime() + expirationMs);
+        Set<Permiso> permisosEfectivos = usuario.getRol() == Rol.ADMIN
+                ? EnumSet.allOf(Permiso.class)
+                : (usuario.getPermisos() != null ? usuario.getPermisos() : Set.of());
+        List<String> permisosNombres = permisosEfectivos.stream().map(Enum::name).toList();
+
         return Jwts.builder()
-                .claims(Map.of("rol", usuario.getRol().name()))
+                .claims(Map.of(
+                        "rol", usuario.getRol().name(),
+                        "permisos", permisosNombres
+                ))
                 .subject(usuario.getEmail())
                 .issuedAt(ahora)
                 .expiration(expiracion)

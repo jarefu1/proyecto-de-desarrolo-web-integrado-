@@ -1,5 +1,7 @@
 package com.mhmstore.api.security;
 
+import com.mhmstore.api.model.Permiso;
+import com.mhmstore.api.model.Rol;
 import com.mhmstore.api.model.Usuario;
 import com.mhmstore.api.repository.UsuarioRepository;
 import io.jsonwebtoken.JwtException;
@@ -8,8 +10,12 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.EnumSet;
 import java.util.List;
+import java.util.Set;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
@@ -36,7 +42,18 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 if (SecurityContextHolder.getContext().getAuthentication() == null) {
                     Usuario usuario = usuarioRepository.findByEmailIgnoreCase(email).orElse(null);
                     if (usuario != null) {
-                        var authorities = List.of(new SimpleGrantedAuthority("ROLE_" + usuario.getRol().name()));
+                        List<GrantedAuthority> authorities = new ArrayList<>();
+                        authorities.add(new SimpleGrantedAuthority("ROLE_" + usuario.getRol().name()));
+
+                        Set<Permiso> permisosEfectivos = usuario.getRol() == Rol.ADMIN
+                                ? EnumSet.allOf(Permiso.class)
+                                : (usuario.getPermisos() != null ? usuario.getPermisos() : Set.of());
+
+                        for (Permiso permiso : permisosEfectivos) {
+                            authorities.add(new SimpleGrantedAuthority("PERMISO_" + permiso.name()));
+                            authorities.add(new SimpleGrantedAuthority(permiso.name()));
+                        }
+
                         var authentication = new UsernamePasswordAuthenticationToken(
                                 usuario.getEmail(), null, authorities);
                         SecurityContextHolder.getContext().setAuthentication(authentication);

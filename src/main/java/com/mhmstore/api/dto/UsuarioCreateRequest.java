@@ -1,11 +1,14 @@
 package com.mhmstore.api.dto;
 
+import com.mhmstore.api.model.Permiso;
 import com.mhmstore.api.model.Rol;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
+
+import java.util.Set;
 
 public record UsuarioCreateRequest(
     @NotBlank(message = "El nombre es obligatorio")
@@ -18,13 +21,19 @@ public record UsuarioCreateRequest(
     String email,
 
     @NotBlank(message = "La contraseña es obligatoria")
-    @Size(max = 12, message = "La contraseña debe tener como máximo 12 caracteres")
-@Pattern(
-    regexp = "^\\S(.*\\S)?$",
-    message = "La contraseña no puede tener espacios al inicio ni al final"
-)
-String contrasena,
+    @Size(min = 6, max = 72, message = "La contraseña debe tener entre 6 y 72 caracteres")
+    @Pattern(
+        regexp = "^\\S(.*\\S)?$",
+        message = "La contraseña no puede tener espacios al inicio ni al final"
+    )
+    String contrasena,
 
     @NotNull(message = "El rol es obligatorio")
-    Rol rol
-) {}
+    Rol rol,
+
+    Set<Permiso> permisos
+) {
+    public UsuarioCreateRequest(String nombre, String email, String contrasena, Rol rol) {
+        this(nombre, email, contrasena, rol, null);
+    }
+}

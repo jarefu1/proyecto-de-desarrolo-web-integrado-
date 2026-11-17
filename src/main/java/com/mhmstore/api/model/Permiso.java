@@ -1,0 +1,11 @@
+package com.mhmstore.api.model;
+
+public enum Permiso {
+    VER_CATALOGOS,
+    GESTIONAR_PRODUCTOS,
+    GESTIONAR_INVENTARIO,
+    GESTIONAR_CATALOGOS,
+    GESTIONAR_CARRITO,
+    GESTIONAR_PEDIDOS,
+    VER_REPORTES
+}
