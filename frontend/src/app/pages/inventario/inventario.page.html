@@ -1,0 +1,218 @@
+
+    <div class="page-container">
+      <header class="page-header">
+        <div>
+          <span class="eyebrow">MHM STORE · HECHAS PARA TU CAMINO</span>
+          <h2>Control de inventario</h2>
+          <p class="subtitle">Administra productos, precios, existencias e imágenes de la tienda.</p>
+        </div>
+        <div class="header-actions">
+          <label class="search-box"><span>⌕</span><input type="search" placeholder="Busca tu modelo..." [value]="busqueda()" (input)="buscar($event)" /></label>
+          @if (auth.tienePermiso('GESTIONAR_INVENTARIO')) {
+            <button (click)="alternarFiltroStockBajo()" [class.active]="filtroStockBajo()" class="btn btn-warning">{{ filtroStockBajo() ? 'Todo el stock' : 'Stock bajo' }}</button>
+          }
+          @if (auth.tienePermiso('GESTIONAR_PRODUCTOS')) {
+            <button (click)="abrirModalCrear()" class="btn btn-primary">+ Añadir mochila</button>
+          }
+        </div>
+      </header>
+
+      <section class="inventory-stats">
+        @for (dato of indicadores(); track dato.nombre) { <article [class]="dato.clase"><small>{{ dato.nombre }}</small><strong>{{ dato.valor }}</strong></article> }
+      </section>
+      @if (prods.error()) { <div class="alert alert-error">{{ prods.error() }}</div> }
+      <label class="availability-filter">Disponibilidad <select [value]="disponibilidad()" (change)="disponibilidad.set(valor($event)); cargarProductos(0)"><option value="">Todas</option><option value="true">Con existencias</option><option value="false">Agotados</option></select></label>
+      @if (auth.tienePermiso('GESTIONAR_CATALOGOS')) {
+        <details class="category-management"><summary>Gestión de categorías</summary>
+          <form (submit)="$event.preventDefault(); guardarCategoria()" class="category-editor">
+            <label>Nombre <input required maxlength="60" [value]="nombreCategoria()" (input)="nombreCategoria.set(valor($event))" /></label>
+            <button type="submit" [disabled]="!nombreCategoria().trim() || categoriaOcupada()" class="btn btn-primary">{{ categoriaEditando() ? 'Guardar cambios' : 'Agregar categoría' }}</button>
+            @if (categoriaEditando()) { <button type="button" class="btn btn-secondary" (click)="categoriaEditando.set(null); nombreCategoria.set('')">Cancelar</button> }
+          </form>
+          <div class="category-list">@for (cat of categoriasAdmin(); track cat.id) {
+            <div><span><b>{{ cat.nombre }}</b> · {{ cat.productos }} productos</span><button class="btn" (click)="categoriaEditando.set(cat.id); nombreCategoria.set(cat.nombre)">Editar</button><button class="btn danger" [disabled]="cat.productos > 0 || categoriaOcupada()" title="Solo se pueden eliminar categorías sin productos" (click)="eliminarCategoria(cat.id, cat.nombre)">Eliminar</button></div>
+          }</div>
+        </details>
+      }
+      <nav class="category-pills" aria-label="Filtrar mochilas por categoría">
+        <button (click)="seleccionarCategoria(null)" [class.selected]="categoriaSeleccionada() === null">Todas</button>
+        @for (categoria of prods.categorias(); track categoria.id) {
+          <button (click)="seleccionarCategoria(categoria.id)" [class.selected]="categoriaSeleccionada() === categoria.id">{{ categoria.nombre }}</button>
+        }
+        
+      </nav>
+
+      @if (mensajeExito()) {
+        <div class="alert alert-success">{{ mensajeExito() }}</div>
+      }
+      @if (mensajeError()) {
+        <div class="alert alert-error">{{ mensajeError() }}</div>
+      }
+
+      <app-inventario-vista [vista]="vista()" (cambiar)="cambiarVista($event)"/>
+      <!-- Las vistas comparten datos, filtros y paginación. -->
+      @if (prods.cargando()) {
+        <div class="loading">Cargando mochilas desde el servidor...</div>
+      } @else if (prods.productos().length === 0) {
+        <div class="empty-state">No hay mochilas registradas con este criterio.</div>
+      } @else if (vista() === 'lista') {
+        <app-inventario-lista [productos]="prods.productos()" (editar)="abrirModalEditar($event)" (eliminar)="eliminarProducto($event)" (stock)="ajustarStock($event.producto,$event.tipo)"/>
+      } @else {
+        <div class="products-grid">
+          @for (prod of prods.productos(); track prod.id) {
+            <div class="product-card" [class.low-stock]="prod.cantidad > 0 && prod.cantidad <= prod.stockMinimo">
+              <div class="card-badge" [class.badge-empty]="prod.cantidad === 0" [class.badge-warning]="prod.cantidad > 0 && prod.cantidad <= prod.stockMinimo" [class.badge-success]="prod.cantidad > prod.stockMinimo">
+                {{ estadoStock(prod) }} · {{ prod.cantidad }}
+              </div>
+              <div class="card-header">
+                <span class="sku-tag">{{ prod.codigo }}</span>
+                <span class="category-tag">{{ prod.categoriaNombre }}</span>
+              </div>
+              <div class="product-art">
+                @if (prod.imagenUrl) { <img [src]="imagenCompleta(prod.imagenUrl)" [alt]="prod.modelo" (error)="prod.imagenUrl=null" /> }
+                @else { <span class="image-placeholder"><span>▧</span>Imagen no disponible</span> }
+              </div>
+              <h3 class="product-title">{{ prod.modelo }}</h3>
+              <a class="detail-link" [routerLink]="['/producto', prod.id]">Ver detalles <span>→</span></a>
+              <p class="product-meta">{{ prod.activo ? 'Publicado' : 'Oculto' }} · Mínimo: {{ prod.stockMinimo }}</p><p class="product-meta">Creado: {{ prod.fechaCreacion | date:'short' }} · Actualizado: {{ prod.fechaActualizacion | date:'short' }}</p>
+              <p class="product-meta">Color: <strong>{{ prod.color }}</strong> | Almacén: <strong>{{ prod.almacenNombre }}</strong></p>
+              <div class="product-price">S/ {{ prod.precio | number:'1.2-2' }}</div>
+
+              <div class="card-actions">
+                @if (auth.tienePermiso('GESTIONAR_INVENTARIO')) {
+                  <div class="stock-controls">
+                    <button (click)="ajustarStock(prod, 'entrada')" class="btn-icon" title="Entrada rápida de stock (+1)">➕</button>
+                    <button (click)="ajustarStock(prod, 'salida')" class="btn-icon" title="Salida rápida de stock (-1)" [disabled]="prod.cantidad <= 0">➖</button>
+                  </div>
+                }
+
+                @if (auth.tienePermiso('GESTIONAR_PRODUCTOS')) {
+                  <div class="admin-controls">
+                    <button (click)="abrirModalEditar(prod)" class="btn-icon edit" title="Editar">✏️</button>
+                    <button (click)="eliminarProducto(prod)" class="btn-icon delete" title="Eliminar">🗑️</button>
+                  </div>
+                }
+              </div>
+            </div>
+          }
+        </div>
+      }
+
+      <div class="pagination" aria-label="Paginación de productos">
+        <button class="btn btn-secondary" (click)="cambiarPagina(-1)" [disabled]="prods.paginaActual() === 0 || prods.cargando()">Anterior</button>
+        <span>Página {{ prods.paginaActual() + 1 }} de {{ prods.totalPaginas() || 1 }}</span>
+        <button class="btn btn-secondary" (click)="cambiarPagina(1)" [disabled]="prods.paginaActual() + 1 >= prods.totalPaginas() || prods.cargando()">Siguiente</button>
+      </div>
+
+      <!-- Modal Crear / Editar -->
+      @if (mostrarModal()) {
+        <div class="modal-backdrop">
+          <div class="modal-dialog">
+            <div class="modal-header">
+              <h3>{{ editandoId() ? 'Editar Mochila' : 'Registrar Nueva Mochila' }}</h3>
+              <button (click)="cerrarModal()" [disabled]="guardando()" class="close-btn">&times;</button>
+            </div>
+
+            <form [formGroup]="form" (ngSubmit)="guardarProducto()">
+              <div class="form-grid">
+                <div class="form-group">
+                  <label>Código SKU *</label>
+                  <input formControlName="codigo" placeholder="Ej. MOCH015" />
+                  @if (form.get('codigo')?.invalid && form.get('codigo')?.touched) {
+                    <small class="error">Código obligatorio (máx. 12 car.)</small>
+                  }
+                </div>
+
+                <div class="form-group">
+                  <label>Modelo *</label>
+                  <input formControlName="modelo" placeholder="Ej. Mochila Urbana Pro" />
+                  @if (form.get('modelo')?.invalid && form.get('modelo')?.touched) {
+                    <small class="error">Modelo obligatorio</small>
+                  }
+                </div>
+
+                <div class="form-group">
+                  <label for="product-color">Color de esta mochila *</label>
+                  <input id="product-color" formControlName="color" placeholder="Ej. Negro" /><small>Este color se aplicará a todas las fotos de este producto.</small>
+                  @if (form.get('color')?.invalid && form.get('color')?.touched) {
+                    <small class="error">Color obligatorio</small>
+                  }
+                </div>
+
+                <div class="form-group span-2">
+                  <label>Descripción</label>
+                  <textarea formControlName="descripcion" rows="3" maxlength="255" placeholder="Detalles y características de la mochila"></textarea>
+                </div>
+
+                <div class="form-group"><label>Stock mínimo *</label><input type="number" min="0" step="1" formControlName="stockMinimo" /></div>
+                <div class="form-group"><label>Estado *</label><select formControlName="activo"><option [ngValue]="true">Publicado</option><option [ngValue]="false">Oculto</option></select></div>
+                <div class="form-group"><label>Muestra para el catálogo (opcional)</label><input type="color" formControlName="colorHex"/><small>Elige el tono del círculo que verá el cliente.</small></div>
+                <div class="form-group"><label>Material</label><input formControlName="material" maxlength="100"/></div>
+                <div class="form-group"><label>Capacidad</label><input formControlName="capacidad" maxlength="40" placeholder="Valor y unidad"/></div>
+                <div class="form-group"><label>Dimensiones</label><input formControlName="dimensiones" maxlength="80" placeholder="Alto × ancho × fondo y unidad"/></div>
+                <div class="form-group"><label>Peso</label><input formControlName="peso" maxlength="40" placeholder="Valor y unidad"/></div>
+                <div class="form-group">
+                  <label>Categoría *</label>
+                  <select formControlName="categoriaId">
+                    <option [ngValue]="null">Seleccione...</option>
+                    @for (cat of prods.categorias(); track cat.id) {
+                      <option [ngValue]="cat.id">{{ cat.nombre }}</option>
+                    }
+                  </select>
+                </div>
+
+                <div class="form-group">
+                  <label>Precio (S/) *</label>
+                  <input type="number" step="0.01" formControlName="precio" />
+                  @if (form.get('precio')?.invalid && form.get('precio')?.touched) {
+                    <small class="error">Precio debe ser mayor a 0</small>
+                  }
+                </div>
+
+                <div class="form-group">
+                  <label>Cantidad (Stock) *</label>
+                  <input type="number" formControlName="cantidad" />
+                  @if (form.get('cantidad')?.invalid && form.get('cantidad')?.touched) {
+                    <small class="error">Cantidad no puede ser negativa</small>
+                  }
+                </div>
+
+                <div class="form-group span-2">
+                  <label>Almacén *</label>
+                  <select formControlName="almacenId">
+                    <option [ngValue]="null">Seleccione...</option>
+                    @for (alm of prods.almacenes(); track alm.id) {
+                      <option [ngValue]="alm.id">{{ alm.nombre }} - {{ alm.ubicacion }}</option>
+                    }
+                  </select>
+                </div>
+              </div>
+
+              <div class="image-upload">
+                <label for="product-image">Foto de la mochila</label>
+                <small>La foto se asociará al color <strong>{{ form.get('color')?.value || 'que escribas arriba' }}</strong>. Se mostrará primero en la tienda al guardar la mochila.</small>
+                @if (imagenPrevia() || imagenActual()) {
+                  <img class="image-preview" [src]="imagenPrevia() || imagenCompleta(imagenActual()!)" alt="Vista previa de la imagen" />
+                } @else { <div class="image-preview image-placeholder">▧<small>Sin imagen</small></div> }
+                <input id="product-image" type="file" accept="image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp" (change)="seleccionarImagen($event)" />
+                <small>JPG, PNG o WebP · máximo 5 MB. Si editas y no eliges otra, se conserva la actual.</small>
+                @if (errorImagen()) { <small class="error">{{ errorImagen() }}</small> }
+              </div>
+
+              @if (editandoId(); as id) {
+                @if (form.get('color')?.value !== colorGuardado()) { <p class="color-help">Las fotos adicionales se guardan con el color registrado: {{ colorGuardado() }}. Guarda el producto para aplicar el cambio de color.</p> }
+                <app-galeria-editor [productoId]="id" [color]="colorGuardado() || 'este producto'"/>
+              }
+              @else { <p class="color-help">Después de guardar, vuelve a editar esta mochila para añadir más fotos de este color. Si tienes la misma mochila en otro color, registra otro producto con el mismo modelo y categoría, y un código distinto.</p> }
+              <div class="modal-footer">
+                <button type="button" (click)="cerrarModal()" [disabled]="guardando()" class="btn btn-secondary">Cancelar</button>
+                <button type="submit" [disabled]="form.invalid || guardando()" class="btn btn-primary">
+                  {{ guardando() ? 'Guardando...' : 'Guardar mochila' }}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      }
+    </div>
+  

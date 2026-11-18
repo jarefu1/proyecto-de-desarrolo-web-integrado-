@@ -16,6 +16,11 @@ export interface Producto {
   codigo: string;
   modelo: string;
   color: string;
+  colorHex?: string | null;
+  material?: string | null;
+  capacidad?: string | null;
+  dimensiones?: string | null;
+  peso?: string | null;
   stockMinimo: number;
   activo: boolean;
   fechaCreacion?: string;
@@ -34,6 +39,11 @@ export interface ProductoRequest {
   codigo: string;
   modelo: string;
   color: string;
+  colorHex?: string | null;
+  material?: string | null;
+  capacidad?: string | null;
+  dimensiones?: string | null;
+  peso?: string | null;
   stockMinimo: number;
   activo: boolean;
   fechaCreacion?: string;
@@ -44,3 +54,6 @@ export interface ProductoRequest {
   cantidad: number;
   almacenId: number;
 }
+
+export interface FotoProducto { id: number; url: string; }
+export interface DetalleProducto { producto: Producto; variantes: Producto[]; imagenes: FotoProducto[]; }

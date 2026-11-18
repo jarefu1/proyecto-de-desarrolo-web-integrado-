@@ -345,7 +345,8 @@ export class LoginPage implements OnInit {
     this.auth.login(creds).subscribe({
       next: () => {
         this.cargando.set(false);
-        this.router.navigate(['/productos']);
+        const destino = this.route.snapshot.queryParamMap.get('returnUrl');
+        this.router.navigateByUrl(destino?.startsWith('/') && !destino.startsWith('//') ? destino : '/productos');
       },
       error: (err) => {
         this.cargando.set(false);
@@ -370,7 +371,8 @@ export class LoginPage implements OnInit {
     this.auth.registrar(req).subscribe({
       next: () => {
         this.cargando.set(false);
-        this.router.navigate(['/productos']);
+        const destino = this.route.snapshot.queryParamMap.get('returnUrl');
+        this.router.navigateByUrl(destino?.startsWith('/') && !destino.startsWith('//') ? destino : '/productos');
       },
       error: (err) => {
         this.cargando.set(false);
