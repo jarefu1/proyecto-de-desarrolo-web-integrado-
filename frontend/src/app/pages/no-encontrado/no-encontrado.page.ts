@@ -1,0 +1,4 @@
+import { Component } from '@angular/core';
+import { RouterLink } from '@angular/router';
+@Component({selector:'app-no-encontrado',standalone:true,imports:[RouterLink],template:`<main class="not-found"><span>404</span><h1>No encontramos esta página</h1><p>El enlace puede haber cambiado o ya no estar disponible.</p><a routerLink="/inicio">Volver al inicio</a></main>`,styles:[`.not-found{min-height:55vh;display:grid;align-content:center;justify-items:center;text-align:center}.not-found>span{font-size:.8rem;letter-spacing:.2em;color:#777}.not-found h1{font-size:clamp(2rem,5vw,3.5rem);letter-spacing:-.06em;margin:.5rem}.not-found p{color:#777}.not-found a{margin-top:1rem;padding:.85rem 1.3rem;border-radius:999px;background:#050505;color:white;text-decoration:none}`]})
+export class NoEncontradoPage {}
