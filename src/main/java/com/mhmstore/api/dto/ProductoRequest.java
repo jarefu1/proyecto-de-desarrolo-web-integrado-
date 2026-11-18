@@ -25,6 +25,9 @@ public class ProductoRequest {
     @Size(max = 30, message = "El color admite maximo 30 caracteres")
     private String color;
 
+    @jakarta.validation.constraints.Size(max = 255)
+    private String descripcion;
+
     @NotNull(message = "La categoria es obligatoria")
     @Positive(message = "El ID de categoria debe ser positivo")
     private Long categoriaId;
@@ -42,6 +45,16 @@ public class ProductoRequest {
     @NotNull(message = "El almacen es obligatorio")
     @Positive(message = "El ID de almacen debe ser positivo")
     private Long almacenId;
+
+    @Min(0)
+    @NotNull
+    private Integer stockMinimo = 5;
+    @NotNull
+    private Boolean activo = true;
+    public Integer getStockMinimo() { return stockMinimo; }
+    public void setStockMinimo(Integer value) { stockMinimo = value; }
+    public Boolean getActivo() { return activo; }
+    public void setActivo(Boolean value) { activo = value; }
 
     public String getCodigo() {
         return codigo;
@@ -66,6 +79,9 @@ public class ProductoRequest {
     public void setColor(String color) {
         this.color = color;
     }
+
+    public String getDescripcion() { return descripcion; }
+    public void setDescripcion(String descripcion) { this.descripcion = descripcion; }
 
     public Long getCategoriaId() {
         return categoriaId;

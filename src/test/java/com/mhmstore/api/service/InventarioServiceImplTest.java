@@ -33,7 +33,7 @@ class InventarioServiceImplTest {
         // ARRANGE: Producto con 10 unidades en stock
         Producto producto = crearProductoConStock(10);
 
-        when(productoRepository.findById(1L))
+        when(productoRepository.findByIdForUpdate(1L))
                 .thenReturn(Optional.of(producto));
 
         when(productoRepository.save(any(Producto.class)))
@@ -54,7 +54,7 @@ class InventarioServiceImplTest {
         // ARRANGE: Producto con solo 5 unidades disponibles
         Producto producto = crearProductoConStock(5);
 
-        when(productoRepository.findById(1L))
+        when(productoRepository.findByIdForUpdate(1L))
                 .thenReturn(Optional.of(producto));
 
         // ACT + ASSERT: Intentar sacar 8 unidades lanza excepción

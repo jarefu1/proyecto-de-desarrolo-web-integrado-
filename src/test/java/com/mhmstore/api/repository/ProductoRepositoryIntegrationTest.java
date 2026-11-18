@@ -13,6 +13,8 @@ import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @DataJpaTest
+@org.springframework.data.jpa.repository.config.EnableJpaRepositories(basePackageClasses = ProductoRepository.class)
+@org.springframework.boot.autoconfigure.domain.EntityScan(basePackageClasses = Producto.class)
 class ProductoRepositoryIntegrationTest {
 
     @Autowired

@@ -1,530 +1,613 @@
 {
   "info": {
     "_postman_id": "36678bc0-66b2-40b5-aa7e-c3cbe3496a69",
-    "name": "MHM Store API - APF1",
-    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
-    "_exporter_id": "57565470",
-    "_collection_link": "https://go.postman.co/collection/57565470-36678bc0-66b2-40b5-aa7e-c3cbe3496a69?source=collection_link"
+    "name": "MHM Store API - APF2 (Persistencia + Seguridad + Dominio Completo)",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "item": [
     {
-      "name": "Login/Autenticación",
-      "event": [
+      "name": "1. Autenticación JWT",
+      "item": [
         {
-          "listen": "test",
-          "script": {
-            "type": "text/javascript",
-            "exec": [
-              "const jsonData = pm.response.json();\r\nif (jsonData.token) {\r\n    pm.collectionVariables.set(\"jwt_token\", jsonData.token);\r\n    console.log(\"Token guardado correctamente:\", jsonData.token);\r\n}"
-            ]
-          }
-        }
-      ],
-      "request": {
-        "method": "POST",
-        "header": [],
-        "body": {
-          "mode": "raw",
-          "raw": "{\r\n  \"username\": \"Administrador\",\r\n  \"password\": \"123\"\r\n}",
-          "options": {
-            "raw": {
-              "language": "json"
+          "name": "Login Administrador (Guarda Token JWT)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Login exitoso (200 OK)\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "const jsonData = pm.response.json();",
+                  "if (jsonData.token) {",
+                  "    pm.collectionVariables.set(\"jwt_token\", jsonData.token);",
+                  "    console.log(\"Token ADMIN guardado correctamente:\", jsonData.token);",
+                  "}"
+                ]
+              }
             }
-          }
-        },
-        "url": {
-          "raw": "http://localhost:8080/api/v1/auth/login",
-          "protocol": "http",
-          "host": [
-            "localhost"
           ],
-          "port": "8080",
-          "path": [
-            "api",
-            "v1",
-            "auth",
-            "login"
-          ]
-        }
-      },
-      "response": []
-    },
-    {
-      "name": "Listar mochilas",
-      "event": [
-        {
-          "listen": "prerequest",
-          "script": {
-            "exec": [
-              "// ===== BEFORE REQUEST =====",
-              "const ahora = new Date().toISOString();",
-              "pm.collectionVariables.set(\"fechaActual\", ahora);",
-              "pm.collectionVariables.set(\"metodoActual\", pm.request.method);",
-              "console.log(\"Petición:\", pm.request.name);",
-              "console.log(\"Método:\", pm.request.method);",
-              "console.log(\"URL:\", pm.request.url.toString());",
-              "console.log(\"Fecha:\", ahora);",
-              "",
-              "// Preparación para consultar la lista de mochilas",
-              "pm.collectionVariables.set(\"operacionActual\", \"LISTAR_MOCHILAS\");",
-              "console.log(\"Preparando consulta GET de todas las mochilas\");"
-            ],
-            "type": "text/javascript",
-            "packages": {}
-          }
-        },
-        {
-          "listen": "test",
-          "script": {
-            "exec": [
-              "pm.test(\"Status code es 200\", function () {",
-              "    pm.response.to.have.status(200);",
-              "});",
-              "",
-              "pm.test(\"La respuesta es JSON\", function () {",
-              "    pm.response.to.be.json;",
-              "});",
-              "",
-              "pm.test(\"La respuesta contiene una lista de mochilas\", function () {",
-              "    const jsonData = pm.response.json();",
-              "    pm.expect(jsonData).to.be.an(\"array\");",
-              "});",
-              "",
-              "pm.test(\"Tiempo de respuesta menor a 2 segundos\", function () {",
-              "    pm.expect(pm.response.responseTime).to.be.below(2000);",
-              "});"
-            ],
-            "type": "text/javascript",
-            "packages": {}
-          }
-        }
-      ],
-      "request": {
-        "method": "GET",
-        "header": [],
-        "url": {
-          "raw": "http://localhost:8080/api/v1/productos",
-          "protocol": "http",
-          "host": [
-            "localhost"
-          ],
-          "port": "8080",
-          "path": [
-            "api",
-            "v1",
-            "productos"
-          ]
-        }
-      },
-      "response": []
-    },
-    {
-      "name": "Crear mochila",
-      "event": [
-        {
-          "listen": "prerequest",
-          "script": {
-            "type": "text/javascript",
-            "exec": [
-              "// ===== BEFORE REQUEST =====\nconst ahora = new Date().toISOString();\npm.collectionVariables.set(\"fechaActual\", ahora);\npm.collectionVariables.set(\"metodoActual\", pm.request.method);\nconsole.log(\"Petición:\", pm.request.name);\nconsole.log(\"Método:\", pm.request.method);\nconsole.log(\"URL:\", pm.request.url.toString());\nconsole.log(\"Fecha:\", ahora);\n\n// Generar datos dinámicos para una nueva mochila\nconst numero = Math.floor(Math.random() * 9000) + 1000;\npm.collectionVariables.set(\"codigoAleatorio\", \"MOCH\" + numero);\npm.collectionVariables.set(\"operacionActual\", \"CREAR_MOCHILA\");\nconsole.log(\"Código dinámico generado:\", pm.collectionVariables.get(\"codigoAleatorio\"));\n\n// Verificar que la petición tenga un body antes de enviarla\npm.test(\"Pre-request: existe body para crear\", function () {\n    pm.expect(pm.request.body).to.not.be.undefined;\n});"
-            ]
-          }
-        },
-        {
-          "listen": "test",
-          "script": {
-            "type": "text/javascript",
-            "exec": [
-              "pm.test(\"Status code es 200 o 201\", function () {\n    pm.expect(pm.response.code).to.be.oneOf([200, 201]);\n});\n\npm.test(\"La respuesta es JSON\", function () {\n    pm.response.to.be.json;\n});\n\npm.test(\"La mochila creada contiene datos válidos\", function () {\n    const jsonData = pm.response.json();\n    pm.expect(jsonData).to.be.an(\"object\");\n    pm.expect(jsonData).to.have.property(\"codigo\");\n    pm.expect(jsonData).to.have.property(\"modelo\");\n    pm.expect(jsonData).to.have.property(\"precio\");\n    pm.expect(jsonData).to.have.property(\"cantidad\");\n});\n\npm.test(\"El código enviado es correcto\", function () {\n    const jsonData = pm.response.json();\n    pm.expect(jsonData.codigo).to.eql(\"MOCH001\");\n});\n\n// Si la API devuelve un id, lo guardamos para poder reutilizarlo.\nconst jsonData = pm.response.json();\nif (jsonData.id !== undefined && jsonData.id !== null) {\n    pm.collectionVariables.set(\"productoId\", jsonData.id);\n}"
-            ]
-          }
-        }
-      ],
-      "request": {
-        "method": "POST",
-        "header": [],
-        "body": {
-          "mode": "raw",
-          "raw": "{\r\n  \"codigo\": \"MOCH001\",\r\n  \"modelo\": \"Mochila Urbana\",\r\n  \"color\": \"Negro\",\r\n  \"categoriaId\": 1,\r\n  \"precio\": 89.90,\r\n  \"cantidad\": 10,\r\n  \"almacenId\": 1\r\n}",
-          "options": {
-            "raw": {
-              "language": "json"
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin@mhmstore.com\",\n  \"contrasena\": \"123\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "http://localhost:8080/api/v1/auth/login",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8080",
+              "path": ["api", "v1", "auth", "login"]
             }
-          }
-        },
-        "url": {
-          "raw": "http://localhost:8080/api/v1/productos",
-          "protocol": "http",
-          "host": [
-            "localhost"
-          ],
-          "port": "8080",
-          "path": [
-            "api",
-            "v1",
-            "productos"
-          ]
-        }
-      },
-      "response": []
-    },
-    {
-      "name": "Obtener mochila por ID",
-      "event": [
-        {
-          "listen": "prerequest",
-          "script": {
-            "type": "text/javascript",
-            "exec": [
-              "// ===== BEFORE REQUEST =====\nconst ahora = new Date().toISOString();\npm.collectionVariables.set(\"fechaActual\", ahora);\npm.collectionVariables.set(\"metodoActual\", pm.request.method);\nconsole.log(\"Petición:\", pm.request.name);\nconsole.log(\"Método:\", pm.request.method);\nconsole.log(\"URL:\", pm.request.url.toString());\nconsole.log(\"Fecha:\", ahora);\n\n// Preparar consulta individual\npm.collectionVariables.set(\"operacionActual\", \"BUSCAR_MOCHILA_POR_ID\");\nconst idGuardado = pm.collectionVariables.get(\"productoId\");\nif (idGuardado) {\n    console.log(\"ID guardado disponible:\", idGuardado);\n} else {\n    console.log(\"No hay productoId guardado; se usará el ID definido en la URL.\");\n}"
-            ]
-          }
+          },
+          "response": []
         },
         {
-          "listen": "test",
-          "script": {
-            "type": "text/javascript",
-            "exec": [
-              "pm.test(\"Status code es 200\", function () {\n    pm.response.to.have.status(200);\n});\n\npm.test(\"La respuesta es JSON\", function () {\n    pm.response.to.be.json;\n});\n\npm.test(\"Se devuelve una mochila\", function () {\n    const jsonData = pm.response.json();\n    pm.expect(jsonData).to.be.an(\"object\");\n    pm.expect(jsonData).to.have.property(\"id\");\n    pm.expect(jsonData).to.have.property(\"codigo\");\n    pm.expect(jsonData).to.have.property(\"modelo\");\n});\n\npm.test(\"El precio no es negativo\", function () {\n    const jsonData = pm.response.json();\n    if (jsonData.precio !== undefined) {\n        pm.expect(Number(jsonData.precio)).to.be.at.least(0);\n    }\n});"
-            ]
-          }
-        }
-      ],
-      "request": {
-        "method": "GET",
-        "header": [],
-        "url": {
-          "raw": "http://localhost:8080/api/v1/productos/{{productoId}}",
-          "protocol": "http",
-          "host": [
-            "localhost"
-          ],
-          "port": "8080",
-          "path": [
-            "api",
-            "v1",
-            "productos",
-            "{{productoId}}"
-          ]
-        }
-      },
-      "response": []
-    },
-    {
-      "name": "Modificar mochila completa",
-      "event": [
-        {
-          "listen": "prerequest",
-          "script": {
-            "type": "text/javascript",
-            "exec": [
-              "// ===== BEFORE REQUEST =====\nconst ahora = new Date().toISOString();\npm.collectionVariables.set(\"fechaActual\", ahora);\npm.collectionVariables.set(\"metodoActual\", pm.request.method);\nconsole.log(\"Petición:\", pm.request.name);\nconsole.log(\"Método:\", pm.request.method);\nconsole.log(\"URL:\", pm.request.url.toString());\nconsole.log(\"Fecha:\", ahora);\n\n// Preparar actualización completa PUT\npm.collectionVariables.set(\"operacionActual\", \"MODIFICAR_MOCHILA\");\npm.collectionVariables.set(\"ultimaActualizacion\", new Date().toISOString());\nconsole.log(\"Preparando modificación completa de la mochila\");\n\n// Comprobar el método antes del envío\nif (pm.request.method !== \"PUT\") {\n    console.warn(\"Se esperaba una petición PUT\");\n}"
-            ]
-          }
-        },
-        {
-          "listen": "test",
-          "script": {
-            "type": "text/javascript",
-            "exec": [
-              "pm.test(\"Status code es 200\", function () {\n    pm.response.to.have.status(200);\n});\n\npm.test(\"La respuesta es JSON\", function () {\n    pm.response.to.be.json;\n});\n\npm.test(\"La mochila fue modificada correctamente\", function () {\n    const jsonData = pm.response.json();\n    pm.expect(jsonData).to.be.an(\"object\");\n    pm.expect(jsonData.modelo).to.eql(\"Mochila Urbana Premium\");\n    pm.expect(jsonData.color).to.eql(\"Azul\");\n    pm.expect(Number(jsonData.precio)).to.eql(119.90);\n    pm.expect(Number(jsonData.cantidad)).to.eql(15);\n});"
-            ]
-          }
-        }
-      ],
-      "request": {
-        "method": "PUT",
-        "header": [],
-        "body": {
-          "mode": "raw",
-          "raw": "{\r\n  \"codigo\": \"MOCH_MOD\",\r\n  \"modelo\": \"Mochila Urbana Premium\",\r\n  \"color\": \"Azul\",\r\n  \"categoriaId\": 1,\r\n  \"precio\": 119.90,\r\n  \"cantidad\": 15,\r\n  \"almacenId\": 1\r\n}",
-          "options": {
-            "raw": {
-              "language": "json"
+          "name": "Login Trabajador (Guarda Token JWT)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Login exitoso (200 OK)\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "const jsonData = pm.response.json();",
+                  "if (jsonData.token) {",
+                  "    pm.collectionVariables.set(\"jwt_token\", jsonData.token);",
+                  "    console.log(\"Token TRABAJADOR guardado correctamente:\", jsonData.token);",
+                  "}"
+                ]
+              }
             }
-          }
-        },
-        "url": {
-          "raw": "http://localhost:8080/api/v1/productos/{{productoId}}",
-          "protocol": "http",
-          "host": [
-            "localhost"
           ],
-          "port": "8080",
-          "path": [
-            "api",
-            "v1",
-            "productos",
-            "{{productoId}}"
-          ]
-        }
-      },
-      "response": []
-    },
-    {
-      "name": "Actualizar mochila parcialmente",
-      "event": [
-        {
-          "listen": "prerequest",
-          "script": {
-            "type": "text/javascript",
-            "exec": [
-              "// ===== BEFORE REQUEST =====\nconst ahora = new Date().toISOString();\npm.collectionVariables.set(\"fechaActual\", ahora);\npm.collectionVariables.set(\"metodoActual\", pm.request.method);\nconsole.log(\"Petición:\", pm.request.name);\nconsole.log(\"Método:\", pm.request.method);\nconsole.log(\"URL:\", pm.request.url.toString());\nconsole.log(\"Fecha:\", ahora);\n\n// Preparar actualización parcial PATCH\npm.collectionVariables.set(\"operacionActual\", \"ACTUALIZAR_PARCIALMENTE\");\npm.collectionVariables.set(\"ultimaActualizacion\", new Date().toISOString());\nconsole.log(\"Preparando actualización parcial de la mochila\");\nif (pm.request.method !== \"PATCH\") {\n    console.warn(\"Se esperaba una petición PATCH\");\n}"
-            ]
-          }
-        },
-        {
-          "listen": "test",
-          "script": {
-            "type": "text/javascript",
-            "exec": [
-              "pm.test(\"Status code es 200\", function () {\n    pm.response.to.have.status(200);\n});\n\npm.test(\"La respuesta es JSON\", function () {\n    pm.response.to.be.json;\n});\n\npm.test(\"La actualización parcial fue aplicada\", function () {\n    const jsonData = pm.response.json();\n    pm.expect(jsonData).to.be.an(\"object\");\n    pm.expect(Number(jsonData.cantidad)).to.eql(20);\n    pm.expect(Number(jsonData.precio)).to.eql(109.90);\n});"
-            ]
-          }
-        }
-      ],
-      "request": {
-        "method": "PATCH",
-        "header": [],
-        "body": {
-          "mode": "raw",
-          "raw": "{\r\n  \"cantidad\": 20,\r\n  \"precio\": 109.90\r\n}",
-          "options": {
-            "raw": {
-              "language": "json"
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"trabajador@mhmstore.com\",\n  \"contrasena\": \"123\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "http://localhost:8080/api/v1/auth/login",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8080",
+              "path": ["api", "v1", "auth", "login"]
             }
-          }
-        },
-        "url": {
-          "raw": "http://localhost:8080/api/v1/productos/{{productoId}}",
-          "protocol": "http",
-          "host": [
-            "localhost"
-          ],
-          "port": "8080",
-          "path": [
-            "api",
-            "v1",
-            "productos",
-            "{{productoId}}"
-          ]
+          },
+          "response": []
         }
-      },
-      "response": []
+      ]
     },
     {
-      "name": "Error 404 - Mochila inexistente",
-      "event": [
+      "name": "2. Usuarios y Permisos (Exclusivo ADMIN)",
+      "item": [
         {
-          "listen": "prerequest",
-          "script": {
-            "exec": [
-              "// ===== BEFORE REQUEST =====",
-              "const ahora = new Date().toISOString();",
-              "pm.collectionVariables.set(\"fechaActual\", ahora);",
-              "pm.collectionVariables.set(\"metodoActual\", pm.request.method);",
-              "console.log(\"Petición:\", pm.request.name);",
-              "console.log(\"Método:\", pm.request.method);",
-              "console.log(\"URL:\", pm.request.url.toString());",
-              "console.log(\"Fecha:\", ahora);",
-              "",
-              "// Preparar prueba negativa con un recurso inexistente",
-              "pm.collectionVariables.set(\"operacionActual\", \"PRUEBA_ERROR_404\");",
-              "pm.collectionVariables.set(\"tipoPrueba\", \"NEGATIVA\");",
-              "console.log(\"Preparando prueba de recurso inexistente (404)\");"
-            ],
-            "type": "text/javascript",
-            "packages": {}
-          }
-        },
-        {
-          "listen": "test",
-          "script": {
-            "exec": [
-              "pm.test(\"Status code es 404\", function () {",
-              "    pm.response.to.have.status(404);",
-              "});",
-              "",
-              "pm.test(\"La API controla correctamente el recurso inexistente\", function () {",
-              "    pm.expect(pm.response.code).to.eql(404);",
-              "});",
-              "",
-              "// Si el backend devuelve JSON para los errores, validamos que sea un objeto.",
-              "if (pm.response.headers.get(\"Content-Type\") && pm.response.headers.get(\"Content-Type\").includes(\"application/json\")) {",
-              "    const jsonData = pm.response.json();",
-              "    pm.expect(jsonData).to.be.an(\"object\");",
-              "}"
-            ],
-            "type": "text/javascript",
-            "packages": {}
-          }
-        }
-      ],
-      "request": {
-        "method": "GET",
-        "header": [],
-        "url": {
-          "raw": "http://localhost:8080/api/v1/productos/99999",
-          "protocol": "http",
-          "host": [
-            "localhost"
-          ],
-          "port": "8080",
-          "path": [
-            "api",
-            "v1",
-            "productos",
-            "99999"
-          ]
-        }
-      },
-      "response": []
-    },
-    {
-      "name": "Registrar salida de inventario (Transaccional)",
-      "event": [
-        {
-          "listen": "prerequest",
-          "script": {
-            "type": "text/javascript",
-            "exec": [
-              "pm.collectionVariables.set(\"operacionActual\", \"SALIDA_INVENTARIO\");\nconsole.log(\"Preparando salida transaccional de stock\");"
-            ]
-          }
-        },
-        {
-          "listen": "test",
-          "script": {
-            "type": "text/javascript",
-            "exec": [
-              "pm.test(\"Status code es 200\", function () {\n    pm.response.to.have.status(200);\n});\n\npm.test(\"Se devuelve el producto con el stock actualizado\", function () {\n    const jsonData = pm.response.json();\n    pm.expect(jsonData).to.have.property(\"cantidad\");\n    pm.expect(Number(jsonData.cantidad)).to.be.at.least(0);\n});"
-            ]
-          }
-        }
-      ],
-      "request": {
-        "method": "PATCH",
-        "header": [],
-        "body": {
-          "mode": "raw",
-          "raw": "{\r\n  \"cantidad\": 3\r\n}",
-          "options": {
-            "raw": {
-              "language": "json"
+          "name": "Listar permisos disponibles",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:8080/api/v1/usuarios/permisos",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8080",
+              "path": ["api", "v1", "usuarios", "permisos"]
             }
-          }
-        },
-        "url": {
-          "raw": "http://localhost:8080/api/v1/inventario/{{productoId}}/salida",
-          "protocol": "http",
-          "host": [
-            "localhost"
-          ],
-          "port": "8080",
-          "path": [
-            "api",
-            "v1",
-            "inventario",
-            "{{productoId}}",
-            "salida"
-          ]
-        }
-      },
-      "response": []
-    },
-    {
-      "name": "Error 409 - Salida con stock insuficiente",
-      "event": [
-        {
-          "listen": "prerequest",
-          "script": {
-            "type": "text/javascript",
-            "exec": [
-              "pm.collectionVariables.set(\"operacionActual\", \"PRUEBA_STOCK_INSUFICIENTE\");\npm.collectionVariables.set(\"tipoPrueba\", \"NEGATIVA\");"
-            ]
-          }
+          },
+          "response": []
         },
         {
-          "listen": "test",
-          "script": {
-            "type": "text/javascript",
-            "exec": [
-              "pm.test(\"Status code es 409 Conflict por stock insuficiente\", function () {\n    pm.response.to.have.status(409);\n});"
-            ]
-          }
-        }
-      ],
-      "request": {
-        "method": "PATCH",
-        "header": [],
-        "body": {
-          "mode": "raw",
-          "raw": "{\r\n  \"cantidad\": 9999\r\n}",
-          "options": {
-            "raw": {
-              "language": "json"
+          "name": "Crear trabajador seleccionando permisos",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Trabajador creado (201 Created)\", function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "const jsonData = pm.response.json();",
+                  "if (jsonData.id) {",
+                  "    pm.collectionVariables.set(\"trabajadorId\", jsonData.id);",
+                  "}"
+                ]
+              }
             }
-          }
-        },
-        "url": {
-          "raw": "http://localhost:8080/api/v1/inventario/{{productoId}}/salida",
-          "protocol": "http",
-          "host": [
-            "localhost"
           ],
-          "port": "8080",
-          "path": [
-            "api",
-            "v1",
-            "inventario",
-            "{{productoId}}",
-            "salida"
-          ]
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Nuevo Trabajador Ventas\",\n  \"email\": \"ventas@mhmstore.com\",\n  \"contrasena\": \"ClaveSegura123\",\n  \"rol\": \"TRABAJADOR\",\n  \"permisos\": [\n    \"VER_CATALOGOS\",\n    \"GESTIONAR_CARRITO\",\n    \"GESTIONAR_PEDIDOS\",\n    \"GESTIONAR_INVENTARIO\"\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "http://localhost:8080/api/v1/usuarios",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8080",
+              "path": ["api", "v1", "usuarios"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Actualizar permisos de trabajador",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"permisos\": [\n    \"VER_CATALOGOS\",\n    \"GESTIONAR_PRODUCTOS\",\n    \"GESTIONAR_INVENTARIO\",\n    \"GESTIONAR_CARRITO\",\n    \"GESTIONAR_PEDIDOS\",\n    \"VER_REPORTES\"\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "http://localhost:8080/api/v1/usuarios/{{trabajadorId}}/permisos",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8080",
+              "path": ["api", "v1", "usuarios", "{{trabajadorId}}", "permisos"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Listar todos los usuarios",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:8080/api/v1/usuarios",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8080",
+              "path": ["api", "v1", "usuarios"]
+            }
+          },
+          "response": []
         }
-      },
-      "response": []
+      ]
     },
     {
-      "name": "Eliminar mochila",
-      "event": [
+      "name": "3. Productos y Consulta JPQL",
+      "item": [
         {
-          "listen": "prerequest",
-          "script": {
-            "type": "text/javascript",
-            "exec": [
-              "// ===== BEFORE REQUEST =====\nconst ahora = new Date().toISOString();\npm.collectionVariables.set(\"fechaActual\", ahora);\npm.collectionVariables.set(\"metodoActual\", pm.request.method);\nconsole.log(\"Petición:\", pm.request.name);\nconsole.log(\"Método:\", pm.request.method);\nconsole.log(\"URL:\", pm.request.url.toString());\nconsole.log(\"Fecha:\", ahora);\n\n// Preparar eliminación\npm.collectionVariables.set(\"operacionActual\", \"ELIMINAR_MOCHILA\");\npm.collectionVariables.set(\"fechaEliminacion\", new Date().toISOString());\nconsole.log(\"Preparando eliminación de mochila\");\nif (pm.request.method !== \"DELETE\") {\n    console.warn(\"Se esperaba una petición DELETE\");\n}"
-            ]
-          }
+          "name": "Listar mochilas",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code es 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:8080/api/v1/productos",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8080",
+              "path": ["api", "v1", "productos"]
+            }
+          },
+          "response": []
         },
         {
-          "listen": "test",
-          "script": {
-            "type": "text/javascript",
-            "exec": [
-              "pm.test(\"Status code indica eliminación correcta\", function () {\n    pm.expect(pm.response.code).to.be.oneOf([200, 204]);\n});\n\npm.test(\"Tiempo de respuesta menor a 2 segundos\", function () {\n    pm.expect(pm.response.responseTime).to.be.below(2000);\n});"
-            ]
-          }
-        }
-      ],
-      "request": {
-        "method": "DELETE",
-        "header": [],
-        "url": {
-          "raw": "http://localhost:8080/api/v1/productos/{{productoId}}",
-          "protocol": "http",
-          "host": [
-            "localhost"
+          "name": "Consulta JPQL - Productos con stock bajo",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code es 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ]
+              }
+            }
           ],
-          "port": "8080",
-          "path": [
-            "api",
-            "v1",
-            "productos",
-            "{{productoId}}"
-          ]
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:8080/api/v1/productos/stock-bajo?limite=5",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8080",
+              "path": ["api", "v1", "productos", "stock-bajo"],
+              "query": [
+                {
+                  "key": "limite",
+                  "value": "5"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Crear mochila",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code es 200 o 201\", function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 201]);",
+                  "});",
+                  "const jsonData = pm.response.json();",
+                  "if (jsonData.id !== undefined && jsonData.id !== null) {",
+                  "    pm.collectionVariables.set(\"productoId\", jsonData.id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"codigo\": \"MOCH099\",\n  \"modelo\": \"Mochila Urbana\",\n  \"color\": \"Negro\",\n  \"categoriaId\": 1,\n  \"precio\": 89.90,\n  \"cantidad\": 10,\n  \"almacenId\": 1\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "http://localhost:8080/api/v1/productos",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8080",
+              "path": ["api", "v1", "productos"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Obtener mochila por ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:8080/api/v1/productos/{{productoId}}",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8080",
+              "path": ["api", "v1", "productos", "{{productoId}}"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Modificar mochila completa (PUT)",
+          "request": {
+            "method": "PUT",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"codigo\": \"MOCH_MOD\",\n  \"modelo\": \"Mochila Urbana Premium\",\n  \"color\": \"Azul\",\n  \"categoriaId\": 1,\n  \"precio\": 119.90,\n  \"cantidad\": 15,\n  \"almacenId\": 1\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "http://localhost:8080/api/v1/productos/{{productoId}}",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8080",
+              "path": ["api", "v1", "productos", "{{productoId}}"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Actualizar mochila parcialmente (PATCH)",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"cantidad\": 20,\n  \"precio\": 109.90\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "http://localhost:8080/api/v1/productos/{{productoId}}",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8080",
+              "path": ["api", "v1", "productos", "{{productoId}}"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Error 404 - Mochila inexistente",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:8080/api/v1/productos/99999",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8080",
+              "path": ["api", "v1", "productos", "99999"]
+            }
+          },
+          "response": []
         }
-      },
-      "response": []
+      ]
+    },
+    {
+      "name": "4. Inventario Transaccional",
+      "item": [
+        {
+          "name": "Registrar salida de inventario (Transaccional)",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"cantidad\": 3\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "http://localhost:8080/api/v1/inventario/{{productoId}}/salida",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8080",
+              "path": ["api", "v1", "inventario", "{{productoId}}", "salida"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Registrar entrada de inventario (Transaccional)",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"cantidad\": 5\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "http://localhost:8080/api/v1/inventario/{{productoId}}/entrada",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8080",
+              "path": ["api", "v1", "inventario", "{{productoId}}", "entrada"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Error 409 - Salida con stock insuficiente",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"cantidad\": 9999\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "http://localhost:8080/api/v1/inventario/{{productoId}}/salida",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8080",
+              "path": ["api", "v1", "inventario", "{{productoId}}", "salida"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "5. Carrito, Pedidos y Reportes de Ventas",
+      "item": [
+        {
+          "name": "Obtener o crear carrito activo por usuario",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const jsonData = pm.response.json();",
+                  "if (jsonData.id) {",
+                  "    pm.collectionVariables.set(\"carritoId\", jsonData.id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:8080/api/v1/carritos/usuario/1",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8080",
+              "path": ["api", "v1", "carritos", "usuario", "1"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Agregar producto al carrito",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"productoId\": 1,\n  \"cantidad\": 2\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "http://localhost:8080/api/v1/carritos/{{carritoId}}/items",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8080",
+              "path": ["api", "v1", "carritos", "{{carritoId}}", "items"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Enviar carrito a caja",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:8080/api/v1/carritos/{{carritoId}}/enviar-a-caja",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8080",
+              "path": ["api", "v1", "carritos", "{{carritoId}}", "enviar-a-caja"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Crear pedido desde carrito (Transaccional)",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"carritoId\": {{carritoId}}\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "http://localhost:8080/api/v1/pedidos",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8080",
+              "path": ["api", "v1", "pedidos"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Listar pedidos",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:8080/api/v1/pedidos",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8080",
+              "path": ["api", "v1", "pedidos"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Generar reporte mensual de ventas (JPQL)",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:8080/api/v1/reportes/mensual?mes=11&anio=2026",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8080",
+              "path": ["api", "v1", "reportes", "mensual"],
+              "query": [
+                {
+                  "key": "mes",
+                  "value": "11"
+                },
+                {
+                  "key": "anio",
+                  "value": "2026"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Listar reportes de ventas",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:8080/api/v1/reportes",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8080",
+              "path": ["api", "v1", "reportes"]
+            }
+          },
+          "response": []
+        }
+      ]
     }
   ],
   "auth": {
@@ -537,67 +620,18 @@
       }
     ]
   },
-  "event": [
-    {
-      "listen": "prerequest",
-      "script": {
-        "exec": [
-          "// BEFORE REQUEST / PRE-REQUEST SCRIPT",
-          "// Se ejecuta antes de enviar cada petición.",
-          "",
-          "// Guardar la fecha y hora actual.",
-          "const fechaActual = new Date().toISOString();",
-          "pm.collectionVariables.set(\"fechaActual\", fechaActual);",
-          "",
-          "// Generar un código aleatorio para datos de prueba.",
-          "const numeroAleatorio = Math.floor(Math.random() * 10000);",
-          "const codigoAleatorio = \"MOCH\" + numeroAleatorio;",
-          "pm.collectionVariables.set(\"codigoAleatorio\", codigoAleatorio);",
-          "",
-          "// Mostrar información de la petición en la consola de Postman.",
-          "console.log(\"=== BEFORE REQUEST ===\");",
-          "console.log(\"Fecha:\", fechaActual);",
-          "console.log(\"Código aleatorio:\", codigoAleatorio);",
-          "console.log(\"Método HTTP:\", pm.request.method);",
-          "console.log(\"URL:\", pm.request.url.toString());"
-        ],
-        "type": "text/javascript",
-        "packages": {}
-      }
-    }
-  ],
   "variable": [
     {
       "key": "productoId",
-      "value": ""
+      "value": "1"
     },
     {
-      "key": "fechaActual",
-      "value": ""
+      "key": "carritoId",
+      "value": "1"
     },
     {
-      "key": "codigoAleatorio",
-      "value": ""
-    },
-    {
-      "key": "metodoActual",
-      "value": ""
-    },
-    {
-      "key": "operacionActual",
-      "value": ""
-    },
-    {
-      "key": "ultimaActualizacion",
-      "value": ""
-    },
-    {
-      "key": "fechaEliminacion",
-      "value": ""
-    },
-    {
-      "key": "tipoPrueba",
-      "value": ""
+      "key": "trabajadorId",
+      "value": "2"
     },
     {
       "key": "jwt_token",

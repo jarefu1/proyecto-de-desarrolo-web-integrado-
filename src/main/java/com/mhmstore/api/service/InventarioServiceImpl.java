@@ -30,7 +30,7 @@ public class InventarioServiceImpl implements InventarioService {
             );
         }
 
-        Producto producto = productoRepository.findById(productoId)
+        Producto producto = productoRepository.findByIdForUpdate(productoId)
                 .orElseThrow(() -> new ProductoNotFoundException(productoId));
 
         if (producto.getCantidad() < cantidad) {
@@ -56,7 +56,7 @@ public class InventarioServiceImpl implements InventarioService {
             );
         }
 
-        Producto producto = productoRepository.findById(productoId)
+        Producto producto = productoRepository.findByIdForUpdate(productoId)
                 .orElseThrow(() -> new ProductoNotFoundException(productoId));
 
         producto.setCantidad(producto.getCantidad() + cantidad);
@@ -70,12 +70,15 @@ public class InventarioServiceImpl implements InventarioService {
                 producto.getCodigo(),
                 producto.getModelo(),
                 producto.getColor(),
+                producto.getDescripcion(),
                 producto.getCategoria().getId(),
                 producto.getCategoria().getNombre(),
                 producto.getPrecio(),
                 producto.getCantidad(),
                 producto.getAlmacen().getId(),
-                producto.getAlmacen().getNombre()
+                producto.getAlmacen().getNombre(),
+                producto.getImagenUrl() == null ? null : "/api/v1/productos/" + producto.getId() + "/imagen",
+                producto.getStockMinimo(), producto.getActivo(), producto.getFechaCreacion(), producto.getFechaActualizacion()
         );
     }
 }
