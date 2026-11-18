@@ -34,6 +34,32 @@ class InventarioCatalogoIntegrationTest {
   mvc.perform(get("/api/v1/productos/pagina").param("q","INV-")).andExpect(status().isOk()).andExpect(jsonPath("$.totalElements").value(3));
   mvc.perform(get("/api/v1/inventario/resumen")).andExpect(status().isUnauthorized());
  }
+ @Test void filtrosCombinadosSeAplicanAntesDePaginar() throws Exception {
+  Producto base=productos.findByCodigoIgnoreCase("INV-A").orElseThrow();
+  for (int i=0;i<101;i++) crear("PRECIO-"+i,8,3,true,base.getAlmacen());
+  Producto especial=crear("PRECIO-FIN",8,3,true,base.getAlmacen());
+  especial.setPrecio(new BigDecimal("85.50"));
+  productos.saveAndFlush(especial);
+  mvc.perform(get("/api/v1/productos/pagina").param("q","PRECIO-")
+      .param("categoria",categoria.getId().toString()).param("disponible","true")
+      .param("precioMin","85.50").param("precioMax","85.50").param("size","1"))
+      .andExpect(status().isOk()).andExpect(jsonPath("$.totalElements").value(1))
+      .andExpect(jsonPath("$.content[0].codigo").value("PRECIO-FIN"));
+  mvc.perform(get("/api/v1/productos/pagina").param("q","INV-")
+      .param("precioMax","20").param("size","1").param("page","1"))
+      .andExpect(status().isOk()).andExpect(jsonPath("$.totalElements").value(3))
+      .andExpect(jsonPath("$.totalPages").value(3)).andExpect(jsonPath("$.number").value(1))
+      .andExpect(jsonPath("$.content[0].codigo").value("INV-B"));
+  mvc.perform(get("/api/v1/productos/pagina").param("q","INV-")
+      .param("disponible","false").param("precioMax","20"))
+      .andExpect(status().isOk()).andExpect(jsonPath("$.totalElements").value(1))
+      .andExpect(jsonPath("$.content[0].codigo").value("INV-C"));
+ }
+ @Test void rechazaRangosDePrecioInvalidos() throws Exception {
+  mvc.perform(get("/api/v1/productos/pagina").param("precioMin","-1")).andExpect(status().isBadRequest());
+  mvc.perform(get("/api/v1/productos/pagina").param("precioMax","-1")).andExpect(status().isBadRequest());
+  mvc.perform(get("/api/v1/productos/pagina").param("precioMin","50").param("precioMax","20")).andExpect(status().isBadRequest());
+ }
  @Test @WithMockUser(roles="CLIENTE") void clienteNoPuedeAdministrar() throws Exception {
   mvc.perform(get("/api/v1/inventario/productos")).andExpect(status().isForbidden());
   mvc.perform(post("/api/v1/categorias").contentType(MediaType.APPLICATION_JSON).content("{\"nombre\":\"No permitido\"}")).andExpect(status().isForbidden());
