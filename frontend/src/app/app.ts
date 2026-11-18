@@ -128,8 +128,12 @@ export class App implements OnInit {
     this.busqueda.set((event.target as HTMLInputElement).value);
   }
 
-  buscar(): void {
+buscar(): void {
     const query = this.busqueda().trim();
-    this.router.navigate(['/productos'], { queryParams: query ? { q: query } : {} });
+    const enCatalogo = this.router.url.startsWith('/productos');
+    this.router.navigate(['/productos'], {
+      queryParams: { q: query || null },
+      queryParamsHandling: enCatalogo ? 'merge' : ''
+    });
   }
 }
