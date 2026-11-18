@@ -24,3 +24,7 @@ body {
 button, input, select { font: inherit; }
 button { color: inherit; }
 a { color: inherit; }
+
+.reveal-ready{opacity:0;transform:translateY(22px);transition:opacity .65s ease,transform .65s ease}.reveal-ready.reveal-visible{opacity:1;transform:none}
+:focus-visible{outline:2px solid #b29837;outline-offset:4px}
+@media(prefers-reduced-motion:reduce){.reveal-ready{opacity:1;transform:none;transition:none}}
