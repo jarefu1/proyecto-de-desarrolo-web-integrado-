@@ -1,29 +1,26 @@
-import { Component, OnInit, inject, signal } from '@angular/core';
+import { Component, OnInit, inject, signal, computed, DestroyRef, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ActivatedRoute, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { switchMap, tap, catchError, of } from 'rxjs';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ProductosService } from '../../services/productos.service';
 import { AuthService } from '../../services/auth.service';
 import { CarritoPedidoService } from '../../services/carrito-pedido.service';
-import { Producto } from '../../models/producto.model';
-import { API_BASE } from '../../config/api.config';
-
-@Component({ selector: 'app-producto-detalle', standalone: true, imports: [CommonModule, RouterLink], template: `
-  <div class="detail-page">
-    <nav class="breadcrumb"><a routerLink="/inicio">Inicio</a><span>›</span><a routerLink="/productos">Catálogo</a><span>›</span><span>{{ producto()?.modelo || 'Producto' }}</span></nav>
-    @if (cargando()) { <p class="state">Cargando producto…</p> }
-    @else if (!producto()) { <div class="state"><h2>No encontramos este producto</h2><a routerLink="/productos">Volver al catálogo</a></div> }
-    @else {
-      <section class="product-detail"><div class="visual">
-        @if (producto()!.imagenUrl) { <img [src]="imagenCompleta(producto()!.imagenUrl!)" [alt]="producto()!.modelo" /> }
-        @else { <div class="placeholder"><b>▧</b><span>Imagen no disponible</span></div> }
-      </div><div class="info"><span class="eyebrow">{{ producto()!.categoriaNombre }} · {{ producto()!.codigo }}</span><h1>{{ producto()!.modelo }}</h1><div class="price">S/ {{ producto()!.precio | number:'1.2-2' }}</div><p class="description">{{ producto()!.descripcion || 'Consulta las características y disponibilidad de este modelo.' }}</p><div class="meta"><span>Color</span><strong>{{ producto()!.color }}</strong></div><div class="meta"><span>Disponibilidad</span><strong>{{ producto()!.cantidad > 0 ? 'En stock' : 'Agotado' }}</strong></div><button class="add-button" (click)="agregar()" [disabled]="!producto()!.cantidad">Agregar al carrito <span>→</span></button>@if (mensaje()) {<p class="notice">{{ mensaje() }}</p>}<p class="note">Pago de demostración disponible desde tu carrito y tus pedidos.</p></div></section>
-    }
-  </div>
-`, styles: [`:host{display:block}.detail-page{padding:1.6rem 0 3rem;color:#080808}.breadcrumb{display:flex;gap:.65rem;color:#777;font-size:.85rem;margin-bottom:2.2rem}.breadcrumb a{color:inherit;text-decoration:none}.product-detail{display:grid;grid-template-columns:1fr 1fr;gap:2.2rem;align-items:start}.visual{height:500px;border-radius:22px;background:#f1f1f1;display:grid;place-items:center;overflow:hidden}.visual img{width:100%;height:100%;object-fit:contain;mix-blend-mode:multiply}.placeholder{display:grid;justify-items:center;gap:.6rem;color:#999}.placeholder b{font-size:3rem;font-weight:400}.info{padding:1.1rem .5rem}.eyebrow{font-size:.7rem;letter-spacing:.14em;color:#777;font-weight:700}.info h1{font-size:clamp(2.5rem,4.2vw,4rem);line-height:1;letter-spacing:-.065em;margin:1rem 0}.price{font-size:2rem;font-weight:750}.description{line-height:1.65;color:#777;border-bottom:1px solid #e5e5e5;padding:1rem 0 1.5rem}.meta{padding:.9rem 0;border-bottom:1px solid #e5e5e5;display:flex;justify-content:space-between}.meta span{color:#777}.add-button{width:100%;margin-top:1.5rem;border:0;border-radius:999px;height:54px;background:#050505;color:white;display:flex;justify-content:space-between;align-items:center;padding:0 1.4rem;font-size:.95rem;cursor:pointer}.add-button:disabled{opacity:.45;cursor:not-allowed}.note,.notice{font-size:.8rem;color:#777}.state{text-align:center;padding:5rem 1rem}.state a{color:#111}@media(max-width:700px){.product-detail{grid-template-columns:1fr;gap:1rem}.visual{height:350px}.info{padding:.5rem 0}.breadcrumb{margin-bottom:1.3rem}}` ] })
+import { FavoritosService } from '../../services/favoritos.service';
+import { DetalleProducto, Producto } from '../../models/producto.model';
+import { ProductoImagenComponent } from '../../components/producto-imagen.component';
+@Component({selector:'app-producto-detalle',standalone:true,imports:[CommonModule,RouterLink,ProductoImagenComponent],templateUrl:'./producto-detalle.page.html',styleUrl:'./producto-detalle.page.css'})
 export class ProductoDetallePage implements OnInit {
-  private readonly route = inject(ActivatedRoute); private readonly productos = inject(ProductosService); private readonly auth = inject(AuthService); private readonly carrito = inject(CarritoPedidoService);
-  readonly producto = signal<Producto | null>(null); readonly cargando = signal(true); readonly mensaje = signal('');
-  ngOnInit(): void { const id = Number(this.route.snapshot.paramMap.get('id')); this.productos.obtenerPorId(id).subscribe({ next: p => { this.producto.set(p); this.cargando.set(false); }, error: () => this.cargando.set(false) }); }
-  imagenCompleta(url: string): string { return `${API_BASE.replace('/api/v1', '')}${url}`; }
-  agregar(): void { const p = this.producto(); if (!p) return; if (!this.auth.estaAutenticado()) { this.mensaje.set('Inicia sesión para agregar este producto al carrito.'); return; } this.carrito.agregarItem(p.id, 1).subscribe({ next: () => this.mensaje.set('Producto agregado al carrito.'), error: () => this.mensaje.set('No se pudo agregar el producto. Inténtalo nuevamente.') }); }
+ private readonly route=inject(ActivatedRoute);private readonly router=inject(Router);private readonly productos=inject(ProductosService);private readonly carrito=inject(CarritoPedidoService);private readonly destroy=inject(DestroyRef);
+ readonly auth=inject(AuthService);readonly favoritos=inject(FavoritosService);
+ readonly detalle=signal<DetalleProducto|null>(null);readonly cargando=signal(true);readonly mensaje=signal('');readonly cantidad=signal(1);readonly enviando=signal(false);readonly indice=signal(0);readonly ampliada=signal(false);
+ readonly producto=computed(()=>this.detalle()?.producto??null);
+ readonly fotos=computed(()=>{const d=this.detalle();if(!d)return [];return [...(d.producto.imagenUrl?[d.producto.imagenUrl]:[]),...d.imagenes.map(i=>i.url)];});
+ readonly especificaciones=computed(()=>{const p=this.producto();return p?[{nombre:'Material',valor:p.material},{nombre:'Capacidad',valor:p.capacidad},{nombre:'Dimensiones',valor:p.dimensiones},{nombre:'Peso',valor:p.peso},{nombre:'Color',valor:p.color},{nombre:'Categoría',valor:p.categoriaNombre},{nombre:'Código de producto',valor:p.codigo}].filter(x=>!!x.valor):[];});
+ ngOnInit():void{this.route.paramMap.pipe(tap(()=>{this.cargando.set(true);this.detalle.set(null);this.mensaje.set('');this.cantidad.set(1);this.indice.set(0);this.ampliada.set(false);}),switchMap(params=>this.productos.obtenerDetalle(Number(params.get('id'))).pipe(catchError(()=>of(null)))),takeUntilDestroyed(this.destroy)).subscribe(d=>{this.detalle.set(d);this.cargando.set(false);});}
+ seleccionar(p:Producto):void{if(p.id!==this.producto()?.id)this.router.navigate(['/producto',p.id]);}
+ color(p:Producto):string{if(p.colorHex)return p.colorHex;const colores:Record<string,string>={negro:'#202020',blanco:'#f5f5f5',azul:'#354e7c',rojo:'#a83c3c',verde:'#596c53',gris:'#8a8a8a',rosado:'#dca6b5',rosa:'#dca6b5',beige:'#d2c3a9',marron:'#82654f','marrón':'#82654f',amarillo:'#e2be4b',morado:'#775b91',naranja:'#ce7c3b'};return colores[p.color.toLocaleLowerCase('es').trim()]??'#b5b5b5';}
+ ajustar(delta:number):void{this.cantidad.update(q=>Math.max(1,Math.min(this.producto()?.cantidad??1,q+delta)));}
+ agregar():void{const p=this.producto();if(!p||this.enviando()||p.cantidad<1)return;if(!this.auth.estaAutenticado()){this.router.navigate(['/login'],{queryParams:{returnUrl:'/producto/'+p.id}});return;}this.enviando.set(true);this.carrito.agregarItem(p.id,this.cantidad()).subscribe({next:()=>{this.enviando.set(false);this.mensaje.set(`${this.cantidad()} unidad(es) en color ${p.color} añadidas a tu carrito.`);},error:e=>{this.enviando.set(false);this.mensaje.set(this.auth.mensajeError(e));}});}
+ @HostListener('document:keydown.escape') cerrarZoom():void{this.ampliada.set(false);}
 }

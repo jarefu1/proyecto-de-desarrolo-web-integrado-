@@ -37,6 +37,7 @@ export class ProductosPage implements OnInit {
     this.route.queryParamMap.subscribe((params) => {
       this.busqueda.set(params.get('q') ?? '');
       this.categoria.set(Number(params.get('categoria')) || null);
+      this.disponibilidad.set(['true', 'false'].includes(params.get('disponible') ?? '') ? params.get('disponible')! : '');
 
       const rawMin = params.get('precioMin');
       const rawMax = params.get('precioMax');
@@ -82,7 +83,8 @@ export class ProductosPage implements OnInit {
         q: this.busqueda().trim() || null,
         categoria: this.categoria(),
         precioMin: this.precioMin(),
-        precioMax: this.precioMax()
+        precioMax: this.precioMax(),
+        disponible: this.disponibilidad() || null
       }
     });
   }
@@ -94,7 +96,7 @@ export class ProductosPage implements OnInit {
 
   disponibilidadCambio(e: Event): void {
     this.disponibilidad.set((e.target as HTMLSelectElement).value);
-    this.cargar(0);
+    this.aplicar();
   }
 
   tieneFiltrosActivos(): boolean {

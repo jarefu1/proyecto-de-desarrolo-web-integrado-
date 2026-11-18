@@ -60,15 +60,16 @@ export class ProductosService {
   ): void {
     this.cargando.set(true);
     this.error.set('');
-    const filtraPrecio = precioMin !== null || precioMax !== null;
     const params = new URLSearchParams({
-      page: String(filtraPrecio ? 0 : page),
-      size: filtraPrecio ? '100' : '20'
+      page: String(page),
+      size: '20'
     });
     if (disponible) params.set('disponible', disponible);
     if (stockBajo) params.set('stockBajo', 'true');
     if (query.trim()) params.set('q', query.trim());
     if (categoriaId !== null) params.set('categoria', String(categoriaId));
+    if (precioMin !== null) params.set('precioMin', String(precioMin));
+    if (precioMax !== null) params.set('precioMax', String(precioMax));
 
     this.http
       .get<{ content: Producto[]; number: number; totalPages: number }>(
@@ -76,16 +77,9 @@ export class ProductosService {
       )
       .subscribe({
         next: (resultado) => {
-          let lista = resultado.content;
-          if (precioMin !== null) {
-            lista = lista.filter((p) => Number(p.precio) >= precioMin);
-          }
-          if (precioMax !== null) {
-            lista = lista.filter((p) => Number(p.precio) <= precioMax);
-          }
-          this._productos.set(lista);
-          this.paginaActual.set(filtraPrecio ? 0 : resultado.number);
-          this.totalPaginas.set(filtraPrecio ? 1 : resultado.totalPages);
+          this._productos.set(resultado.content);
+          this.paginaActual.set(resultado.number);
+          this.totalPaginas.set(resultado.totalPages);
           this.cargando.set(false);
         },
         error: () => {
@@ -115,6 +109,12 @@ export class ProductosService {
     return this.http.delete<void>(`${this.catUrl}/${id}`).pipe(tap(() => this.cargarCategorias()));
   }
 
+  obtenerDetalle(id: number): Observable<import('../models/producto.model').DetalleProducto> { return this.http.get<import('../models/producto.model').DetalleProducto>(`${this.url}/${id}/detalle`); }
+  obtenerVariantes(id: number): Observable<Producto[]> { return this.http.get<Producto[]>(`${this.url}/${id}/variantes`); }
+  obtenerGaleria(id: number): Observable<import('../models/producto.model').FotoProducto[]> { return this.http.get<import('../models/producto.model').FotoProducto[]>(`${this.url}/${id}/galeria`); }
+  agregarFoto(id: number, file: File, varianteId?: number): Observable<import('../models/producto.model').FotoProducto> { const form = new FormData(); form.append('imagen', file); return this.http.post<import('../models/producto.model').FotoProducto>(`${this.url}/${id}/galeria${varianteId ? "?varianteId=" + varianteId : ""}`, form); }
+  eliminarFoto(id: number, imagenId: number): Observable<void> { return this.http.delete<void>(`${this.url}/${id}/galeria/${imagenId}`); }
+
   obtenerPorId(id: number): Observable<Producto> {
     return this.http.get<Producto>(`${this.url}/${id}`);
   }
@@ -125,14 +125,14 @@ export class ProductosService {
       .pipe(tap((creado) => this._productos.update((actual) => [creado, ...actual])));
   }
 
-  guardarImagen(id: number, archivo: File): Observable<Producto> {
+  guardarImagen(id: number, archivo: File, varianteId?: number): Observable<Producto> {
     const datos = new FormData();
     datos.append('imagen', archivo);
     return this.http
-      .post<Producto>(`${this.url}/${id}/imagen`, datos)
+      .post<Producto>(`${this.url}/${id}/imagen${varianteId ? '?varianteId=' + varianteId : ''}`, datos)
       .pipe(
         tap((actualizado) =>
-          this._productos.update((actuales) => actuales.map((p) => (p.id === id ? actualizado : p)))
+          this._productos.update((actuales) => actuales.map((p) => (p.id === actualizado.id ? actualizado : p)))
         )
       );
   }
