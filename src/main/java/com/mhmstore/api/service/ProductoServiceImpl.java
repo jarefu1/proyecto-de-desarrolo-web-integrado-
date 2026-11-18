@@ -61,16 +61,16 @@ public class ProductoServiceImpl implements ProductoService {
             String q) {
 
         return productoRepository.buscarFiltrados(almacenId, null, disponible, stockBajo,
-                true, q == null ? null : q.trim(), Pageable.unpaged())
+                true, q == null ? null : q.trim(), null, null, Pageable.unpaged())
                 .map(this::toResponse).getContent();
     }
 
     @Override
     @Transactional(readOnly = true)
     public Page<ProductoResponse> listarPaginado(Long almacenId, Long categoriaId, Boolean disponible,
-            Boolean stockBajo, String q, Pageable pageable) {
+            Boolean stockBajo, String q, java.math.BigDecimal precioMin, java.math.BigDecimal precioMax, Pageable pageable) {
         return productoRepository.buscarFiltrados(almacenId, categoriaId, disponible, stockBajo,
-                true, q == null ? null : q.trim(), pageable).map(this::toResponse);
+                true, q == null ? null : q.trim(), precioMin, precioMax, pageable).map(this::toResponse);
     }
 
     
@@ -96,7 +96,7 @@ public class ProductoServiceImpl implements ProductoService {
 
     @Transactional(readOnly = true)
     public Page<ProductoResponse> inventario(Long categoria, Boolean disponible, Boolean bajo, String q, Pageable page) {
-        return productoRepository.buscarFiltrados(null, categoria, disponible, bajo, false, q, page).map(this::toResponse);
+        return productoRepository.buscarFiltrados(null, categoria, disponible, bajo, false, q, null, null, page).map(this::toResponse);
     }
 
     @Override
@@ -118,6 +118,11 @@ public class ProductoServiceImpl implements ProductoService {
                 almacen
         );
         producto.setDescripcion(request.getDescripcion());
+        producto.setColorHex(request.getColorHex());
+        producto.setMaterial(request.getMaterial());
+        producto.setCapacidad(request.getCapacidad());
+        producto.setDimensiones(request.getDimensiones());
+        producto.setPeso(request.getPeso());
         producto.setStockMinimo(request.getStockMinimo());
         producto.setActivo(request.getActivo());
 
@@ -138,6 +143,11 @@ public class ProductoServiceImpl implements ProductoService {
         producto.setModelo(request.getModelo().trim());
         producto.setColor(request.getColor().trim());
         producto.setDescripcion(request.getDescripcion());
+        producto.setColorHex(request.getColorHex());
+        producto.setMaterial(request.getMaterial());
+        producto.setCapacidad(request.getCapacidad());
+        producto.setDimensiones(request.getDimensiones());
+        producto.setPeso(request.getPeso());
         producto.setStockMinimo(request.getStockMinimo());
         producto.setActivo(request.getActivo());
         producto.setCategoria(categoria);
@@ -195,8 +205,25 @@ public class ProductoServiceImpl implements ProductoService {
     public void eliminar(Long id) {
         Producto producto = buscar(id);
         String imagenAnterior = producto.getImagenUrl();
+        producto.getGaleria().forEach(imagen -> eliminarImagenTrasCommit(imagen.getArchivo()));
         productoRepository.delete(producto);
         eliminarImagenTrasCommit(imagenAnterior);
+    }
+
+    public Long resolverColorImagen(Long productoId, Long varianteId) {
+        Producto origen = buscar(productoId);
+        if (varianteId == null || varianteId.equals(productoId)) return productoId;
+        Producto destino = buscar(varianteId);
+        if (!origen.getCategoria().getId().equals(destino.getCategoria().getId())
+                || !origen.getModelo().trim().equalsIgnoreCase(destino.getModelo().trim())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "El color elegido no pertenece al mismo modelo y categoría.");
+        }
+        return destino.getId();
+    }
+
+    @Override
+    public ProductoResponse guardarImagen(Long id, Long varianteId, MultipartFile archivo) {
+        return guardarImagen(resolverColorImagen(id, varianteId), archivo);
     }
 
     @Override
@@ -257,7 +284,7 @@ public class ProductoServiceImpl implements ProductoService {
         } else { eliminar.run(); }
     }
 
-    private boolean puedeGestionar() {
+    public boolean puedeGestionar() {
         var auth = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
         return auth != null && auth.getAuthorities().stream().anyMatch(a -> java.util.Set.of("ROLE_ADMIN", "PERMISO_GESTIONAR_PRODUCTOS", "GESTIONAR_PRODUCTOS", "PERMISO_GESTIONAR_INVENTARIO", "GESTIONAR_INVENTARIO", "PERMISO_GESTIONAR_CATALOGOS", "GESTIONAR_CATALOGOS").contains(a.getAuthority()));
     }
@@ -307,7 +334,8 @@ public class ProductoServiceImpl implements ProductoService {
                 producto.getAlmacen().getId(),
                 producto.getAlmacen().getNombre(),
                 producto.getImagenUrl() == null ? null : "/api/v1/productos/" + producto.getId() + "/imagen",
-                producto.getStockMinimo(), producto.getActivo(), producto.getFechaCreacion(), producto.getFechaActualizacion()
+                producto.getStockMinimo(), producto.getActivo(), producto.getFechaCreacion(), producto.getFechaActualizacion(),
+                producto.getColorHex(), producto.getMaterial(), producto.getCapacidad(), producto.getDimensiones(), producto.getPeso()
         );
     }
 }

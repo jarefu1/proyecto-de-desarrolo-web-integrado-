@@ -78,7 +78,8 @@ public class InventarioServiceImpl implements InventarioService {
                 producto.getAlmacen().getId(),
                 producto.getAlmacen().getNombre(),
                 producto.getImagenUrl() == null ? null : "/api/v1/productos/" + producto.getId() + "/imagen",
-                producto.getStockMinimo(), producto.getActivo(), producto.getFechaCreacion(), producto.getFechaActualizacion()
+                producto.getStockMinimo(), producto.getActivo(), producto.getFechaCreacion(), producto.getFechaActualizacion(),
+                producto.getColorHex(), producto.getMaterial(), producto.getCapacidad(), producto.getDimensiones(), producto.getPeso()
         );
     }
 }

@@ -19,6 +19,7 @@ public record ProductoResponse(
         Integer stockMinimo,
         Boolean activo,
         java.time.LocalDateTime fechaCreacion,
-        java.time.LocalDateTime fechaActualizacion
+        java.time.LocalDateTime fechaActualizacion,
+        String colorHex, String material, String capacidad, String dimensiones, String peso
 ) {
 }

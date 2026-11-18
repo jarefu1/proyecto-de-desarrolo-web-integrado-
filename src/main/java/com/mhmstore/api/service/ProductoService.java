@@ -20,7 +20,7 @@ public interface ProductoService {
     );
 
     Page<ProductoResponse> listarPaginado(Long almacenId, Long categoriaId, Boolean disponible,
-            Boolean stockBajo, String q, Pageable pageable);
+            Boolean stockBajo, String q, java.math.BigDecimal precioMin, java.math.BigDecimal precioMax, Pageable pageable);
 
     List<ProductoResponse> buscarProductosConStockBajo(Integer limite);
 
@@ -38,6 +38,8 @@ public interface ProductoService {
     void eliminar(Long id);
 
     ProductoResponse guardarImagen(Long id, MultipartFile imagen);
+
+    ProductoResponse guardarImagen(Long id, Long varianteId, MultipartFile imagen);
 
     ImagenProducto obtenerImagen(Long id);
 
