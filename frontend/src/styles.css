@@ -1,0 +1,26 @@
+:root {
+  color-scheme: light;
+  --ink: #080808;
+  --muted: #727272;
+  --paper: #ffffff;
+  --glass: #ffffff;
+  --line: #e7e7e7;
+  --coral: #f04444;
+  --coral-deep: #d92e2e;
+  --sage: #f1f1f1;
+  --shadow: 0 10px 30px rgba(0, 0, 0, .06);
+}
+
+* { box-sizing: border-box; }
+html { min-width: 360px; background: #fff; }
+body {
+  margin: 0;
+  min-height: 100vh;
+  font-family: 'Arial', 'Segoe UI', sans-serif;
+  color: var(--ink);
+  background: #fff;
+  -webkit-font-smoothing: antialiased;
+}
+button, input, select { font: inherit; }
+button { color: inherit; }
+a { color: inherit; }
