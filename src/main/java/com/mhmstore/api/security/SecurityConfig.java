@@ -60,13 +60,16 @@ public class SecurityConfig {
                 // Catálogo público para explorar; el registro público solo crea cuentas CLIENTE.
                 .requestMatchers("/api/v1/auth/login", "/api/v1/auth/registro", "/swagger-ui/**", "/swagger-ui.html", "/v3/api-docs/**").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/v1/productos/stock-bajo").hasAnyAuthority(
-                    "ROLE_ADMIN", "PERMISO_GESTIONAR_INVENTARIO", "GESTIONAR_INVENTARIO")
+                    "ROLE_ADMIN", "PERMISO_GESTIONAR_INVENTARIO", "GESTIONAR_INVENTARIO", "PERMISO_GESTIONAR_PRODUCTOS", "GESTIONAR_PRODUCTOS", "PERMISO_GESTIONAR_CATALOGOS", "GESTIONAR_CATALOGOS")
                 .requestMatchers(HttpMethod.GET, "/api/v1/productos/**", "/api/v1/categorias/**").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/v1/carritos", "/api/v1/carritos/usuario/**").hasRole("ADMIN")
                 .requestMatchers(HttpMethod.POST, "/api/v1/carritos").hasRole("ADMIN")
                 .requestMatchers(HttpMethod.PATCH, "/api/v1/pedidos/*/estado").hasRole("ADMIN")
                 // Administracion de usuarios y permisos: exclusivo para ADMIN
                 .requestMatchers("/api/v1/usuarios", "/api/v1/usuarios/**").hasRole("ADMIN")
+                .requestMatchers(HttpMethod.GET, "/api/v1/inventario/**").hasAnyAuthority(
+                    "ROLE_ADMIN", "PERMISO_GESTIONAR_INVENTARIO", "GESTIONAR_INVENTARIO",
+                    "PERMISO_GESTIONAR_PRODUCTOS", "GESTIONAR_PRODUCTOS", "PERMISO_GESTIONAR_CATALOGOS", "GESTIONAR_CATALOGOS")
                 // Inventario: ADMIN o trabajador con permiso GESTIONAR_INVENTARIO
                 .requestMatchers("/api/v1/inventario/**").hasAnyAuthority(
                     "ROLE_ADMIN", "PERMISO_GESTIONAR_INVENTARIO", "GESTIONAR_INVENTARIO")
@@ -80,9 +83,9 @@ public class SecurityConfig {
                     "ROLE_ADMIN", "PERMISO_GESTIONAR_PEDIDOS", "GESTIONAR_PEDIDOS")
                 // Lectura de productos, categorias y almacenes
                 .requestMatchers(HttpMethod.GET, "/api/v1/productos/**").hasAnyAuthority(
-                    "ROLE_ADMIN", "PERMISO_VER_CATALOGOS", "VER_CATALOGOS")
+                    "ROLE_ADMIN", "PERMISO_VER_CATALOGOS", "VER_CATALOGOS", "PERMISO_GESTIONAR_PRODUCTOS", "GESTIONAR_PRODUCTOS", "PERMISO_GESTIONAR_INVENTARIO", "GESTIONAR_INVENTARIO")
                 .requestMatchers(HttpMethod.GET, "/api/v1/categorias/**", "/api/v1/almacenes/**").hasAnyAuthority(
-                    "ROLE_ADMIN", "PERMISO_VER_CATALOGOS", "VER_CATALOGOS")
+                    "ROLE_ADMIN", "PERMISO_VER_CATALOGOS", "VER_CATALOGOS", "PERMISO_GESTIONAR_PRODUCTOS", "GESTIONAR_PRODUCTOS", "PERMISO_GESTIONAR_INVENTARIO", "GESTIONAR_INVENTARIO")
                 // Escritura en productos: ADMIN o trabajador con permiso GESTIONAR_PRODUCTOS
                 .requestMatchers(HttpMethod.POST, "/api/v1/productos/**").hasAnyAuthority(
                     "ROLE_ADMIN", "PERMISO_GESTIONAR_PRODUCTOS", "GESTIONAR_PRODUCTOS")

@@ -13,9 +13,11 @@ import java.util.List;
 public class CategoriaServiceImpl implements CategoriaService {
 
     private final CategoriaRepository categoriaRepository;
+    private final com.mhmstore.api.repository.ProductoRepository productos;
 
     public CategoriaServiceImpl(
-            CategoriaRepository categoriaRepository) {
+            CategoriaRepository categoriaRepository, com.mhmstore.api.repository.ProductoRepository productos) {
+        this.productos = productos;
         this.categoriaRepository = categoriaRepository;
     }
 
@@ -68,6 +70,7 @@ public class CategoriaServiceImpl implements CategoriaService {
     @Override
     public void eliminar(Long id) {
         Categoria categoria = obtenerPorId(id);
+        if (productos.countByCategoriaId(id) > 0) throw new ResponseStatusException(HttpStatus.CONFLICT, "La categoría tiene productos asociados. Reasígnalos antes de eliminarla.");
         categoriaRepository.delete(categoria);
     }
 }

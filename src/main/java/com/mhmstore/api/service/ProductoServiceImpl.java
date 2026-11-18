@@ -19,6 +19,15 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.UUID;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.web.multipart.MultipartFile;
+import org.springframework.http.MediaType;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
 @Service
 @Transactional
@@ -29,15 +38,18 @@ public class ProductoServiceImpl implements ProductoService {
     private final ProductoRepository productoRepository;
     private final CategoriaRepository categoriaRepository;
     private final AlmacenRepository almacenRepository;
+    private final Path directorioImagenes;
 
     public ProductoServiceImpl(
             ProductoRepository productoRepository,
             CategoriaRepository categoriaRepository,
-            AlmacenRepository almacenRepository) {
+            AlmacenRepository almacenRepository,
+            @Value("${app.storage.product-images:uploads/productos}") String directorioImagenes) {
 
         this.productoRepository = productoRepository;
         this.categoriaRepository = categoriaRepository;
         this.almacenRepository = almacenRepository;
+        this.directorioImagenes = Path.of(directorioImagenes == null ? "uploads/productos" : directorioImagenes).toAbsolutePath().normalize();
     }
 
     @Override
@@ -48,20 +60,17 @@ public class ProductoServiceImpl implements ProductoService {
             Boolean stockBajo,
             String q) {
 
-        String query = q == null ? null : q.trim().toLowerCase();
+        return productoRepository.buscarFiltrados(almacenId, null, disponible, stockBajo,
+                true, q == null ? null : q.trim(), Pageable.unpaged())
+                .map(this::toResponse).getContent();
+    }
 
-        return productoRepository.findAll().stream()
-                .filter(p -> almacenId == null
-                        || p.getAlmacen().getId().equals(almacenId))
-                .filter(p -> disponible == null
-                        || (p.getCantidad() > 0) == disponible)
-                .filter(p -> stockBajo == null
-                        || (p.getCantidad() <= STOCK_BAJO_UMBRAL) == stockBajo)
-                .filter(p -> query == null || query.isBlank()
-                        || p.getModelo().toLowerCase().contains(query)
-                        || p.getCodigo().toLowerCase().contains(query))
-                .map(this::toResponse)
-                .toList();
+    @Override
+    @Transactional(readOnly = true)
+    public Page<ProductoResponse> listarPaginado(Long almacenId, Long categoriaId, Boolean disponible,
+            Boolean stockBajo, String q, Pageable pageable) {
+        return productoRepository.buscarFiltrados(almacenId, categoriaId, disponible, stockBajo,
+                true, q == null ? null : q.trim(), pageable).map(this::toResponse);
     }
 
     
@@ -80,7 +89,14 @@ public class ProductoServiceImpl implements ProductoService {
     @Override
     @Transactional(readOnly = true)
     public ProductoResponse obtener(Long id) {
-        return toResponse(buscar(id));
+        Producto producto = buscar(id);
+        if (!producto.getActivo() && !puedeGestionar()) throw new ProductoNotFoundException(id);
+        return toResponse(producto);
+    }
+
+    @Transactional(readOnly = true)
+    public Page<ProductoResponse> inventario(Long categoria, Boolean disponible, Boolean bajo, String q, Pageable page) {
+        return productoRepository.buscarFiltrados(null, categoria, disponible, bajo, false, q, page).map(this::toResponse);
     }
 
     @Override
@@ -101,6 +117,9 @@ public class ProductoServiceImpl implements ProductoService {
                 request.getCantidad(),
                 almacen
         );
+        producto.setDescripcion(request.getDescripcion());
+        producto.setStockMinimo(request.getStockMinimo());
+        producto.setActivo(request.getActivo());
 
         return toResponse(productoRepository.save(producto));
     }
@@ -118,6 +137,9 @@ public class ProductoServiceImpl implements ProductoService {
         producto.setCodigo(request.getCodigo().trim().toUpperCase());
         producto.setModelo(request.getModelo().trim());
         producto.setColor(request.getColor().trim());
+        producto.setDescripcion(request.getDescripcion());
+        producto.setStockMinimo(request.getStockMinimo());
+        producto.setActivo(request.getActivo());
         producto.setCategoria(categoria);
         producto.setPrecio(request.getPrecio());
         producto.setCantidad(request.getCantidad());
@@ -172,7 +194,72 @@ public class ProductoServiceImpl implements ProductoService {
     @Override
     public void eliminar(Long id) {
         Producto producto = buscar(id);
+        String imagenAnterior = producto.getImagenUrl();
         productoRepository.delete(producto);
+        eliminarImagenTrasCommit(imagenAnterior);
+    }
+
+    @Override
+    public ProductoResponse guardarImagen(Long id, MultipartFile archivo) {
+        if (archivo == null || archivo.isEmpty() || archivo.getSize() > 5L * 1024 * 1024) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "La imagen debe pesar hasta 5 MB.");
+        }
+        try {
+            byte[] bytes = archivo.getBytes();
+            String tipo = detectarTipo(bytes);
+            if (tipo == null) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Usa una imagen JPG, PNG o WebP válida.");
+            Producto producto = buscar(id);
+            String extension = tipo.equals("image/png") ? ".png" : tipo.equals("image/webp") ? ".webp" : ".jpg";
+            String nombre = UUID.randomUUID() + extension;
+            Files.createDirectories(directorioImagenes);
+            Files.write(directorioImagenes.resolve(nombre), bytes);
+            String imagenAnterior = producto.getImagenUrl();
+            producto.setImagenUrl(nombre);
+            producto.setImagenContentType(tipo);
+            ProductoResponse response = toResponse(productoRepository.save(producto));
+            eliminarImagenTrasCommit(imagenAnterior);
+            return response;
+        } catch (IOException ex) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "No se pudo leer la imagen.");
+        }
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public ImagenProducto obtenerImagen(Long id) {
+        Producto producto = buscar(id);
+        if (producto.getImagenUrl() == null || producto.getImagenContentType() == null) {
+            throw new ProductoNotFoundException(id);
+        }
+        try {
+            Path archivo = directorioImagenes.resolve(Path.of(producto.getImagenUrl()).getFileName()).normalize();
+            if (!archivo.startsWith(directorioImagenes)) throw new IOException("Ruta de imagen inválida");
+            return new ImagenProducto(Files.readAllBytes(archivo), MediaType.parseMediaType(producto.getImagenContentType()));
+        } catch (IOException ex) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "La imagen no está disponible.");
+        }
+    }
+
+    private String detectarTipo(byte[] bytes) {
+        if (bytes.length >= 8 && bytes[0] == (byte)0x89 && bytes[1] == 0x50 && bytes[2] == 0x4e && bytes[3] == 0x47) return "image/png";
+        if (bytes.length >= 3 && bytes[0] == (byte)0xff && bytes[1] == (byte)0xd8 && bytes[2] == (byte)0xff) return "image/jpeg";
+        if (bytes.length >= 12 && bytes[0] == 'R' && bytes[1] == 'I' && bytes[2] == 'F' && bytes[3] == 'F' && bytes[8] == 'W' && bytes[9] == 'E' && bytes[10] == 'B' && bytes[11] == 'P') return "image/webp";
+        return null;
+    }
+
+    private void eliminarImagenTrasCommit(String nombre) {
+        if (nombre == null) return;
+        Runnable eliminar = () -> { try { Files.deleteIfExists(directorioImagenes.resolve(Path.of(nombre).getFileName())); } catch (IOException ignored) { } };
+        if (org.springframework.transaction.support.TransactionSynchronizationManager.isSynchronizationActive()) {
+            org.springframework.transaction.support.TransactionSynchronizationManager.registerSynchronization(new org.springframework.transaction.support.TransactionSynchronization() {
+                @Override public void afterCommit() { eliminar.run(); }
+            });
+        } else { eliminar.run(); }
+    }
+
+    private boolean puedeGestionar() {
+        var auth = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
+        return auth != null && auth.getAuthorities().stream().anyMatch(a -> java.util.Set.of("ROLE_ADMIN", "PERMISO_GESTIONAR_PRODUCTOS", "GESTIONAR_PRODUCTOS", "PERMISO_GESTIONAR_INVENTARIO", "GESTIONAR_INVENTARIO", "PERMISO_GESTIONAR_CATALOGOS", "GESTIONAR_CATALOGOS").contains(a.getAuthority()));
     }
 
     private Producto buscar(Long id) {
@@ -206,18 +293,21 @@ public class ProductoServiceImpl implements ProductoService {
                 });
     }
 
-    private ProductoResponse toResponse(Producto producto) {
+    public ProductoResponse toResponse(Producto producto) {
         return new ProductoResponse(
                 producto.getId(),
                 producto.getCodigo(),
                 producto.getModelo(),
                 producto.getColor(),
+                producto.getDescripcion(),
                 producto.getCategoria().getId(),
                 producto.getCategoria().getNombre(),
                 producto.getPrecio(),
                 producto.getCantidad(),
                 producto.getAlmacen().getId(),
-                producto.getAlmacen().getNombre()
+                producto.getAlmacen().getNombre(),
+                producto.getImagenUrl() == null ? null : "/api/v1/productos/" + producto.getId() + "/imagen",
+                producto.getStockMinimo(), producto.getActivo(), producto.getFechaCreacion(), producto.getFechaActualizacion()
         );
     }
 }
