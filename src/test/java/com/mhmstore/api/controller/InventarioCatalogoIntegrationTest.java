@@ -85,6 +85,22 @@ class InventarioCatalogoIntegrationTest {
   mvc.perform(delete("/api/v1/productos/"+p.getId())).andExpect(status().isNoContent());
   mvc.perform(get("/api/v1/productos/"+p.getId())).andExpect(status().isNotFound());
  }
+ @Test @WithMockUser(roles="ADMIN") void quitarDelCatalogoConservaElProductoYElStock() throws Exception {
+  Long id = productos.findByCodigoIgnoreCase("INV-A").orElseThrow().getId();
+  mvc.perform(patch("/api/v1/productos/" + id).contentType(MediaType.APPLICATION_JSON).content("{\"activo\":false}"))
+      .andExpect(status().isOk()).andExpect(jsonPath("$.activo").value(false))
+      .andExpect(jsonPath("$.cantidad").value(8));
+  mvc.perform(get("/api/v1/productos/pagina").param("q", "INV-A"))
+      .andExpect(status().isOk()).andExpect(jsonPath("$.totalElements").value(0));
+  mvc.perform(get("/api/v1/inventario/productos").param("q", "INV-A"))
+      .andExpect(status().isOk()).andExpect(jsonPath("$.content[0].id").value(id))
+      .andExpect(jsonPath("$.content[0].activo").value(false))
+      .andExpect(jsonPath("$.content[0].cantidad").value(8));
+  mvc.perform(patch("/api/v1/productos/" + id).contentType(MediaType.APPLICATION_JSON).content("{\"activo\":true}"))
+      .andExpect(status().isOk()).andExpect(jsonPath("$.activo").value(true));
+  mvc.perform(get("/api/v1/productos/pagina").param("q", "INV-A"))
+      .andExpect(status().isOk()).andExpect(jsonPath("$.totalElements").value(1));
+ }
  @Test @WithMockUser(roles="ADMIN") void categoriaSeCreaEditaYElimina() throws Exception {
   mvc.perform(post("/api/v1/categorias").contentType(MediaType.APPLICATION_JSON).content("{\"nombre\":\"Categoria nueva\"}")).andExpect(status().isCreated());
   Long id=categorias.findByNombreIgnoreCase("Categoria nueva").orElseThrow().getId();
