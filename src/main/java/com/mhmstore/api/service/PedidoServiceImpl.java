@@ -117,7 +117,10 @@ public class PedidoServiceImpl implements PedidoService {
     @Override
     @Transactional(readOnly = true)
     public PedidoResponse obtenerPorId(Long id) {
-        return toResponse(buscarPedido(id));
+        Pedido pedido = pedidoRepository.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND, "No existe el pedido con ID " + id));
+        return toResponse(pedido);
     }
 
     @Override
@@ -125,7 +128,7 @@ public class PedidoServiceImpl implements PedidoService {
         if (nuevoEstado == null) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "El nuevo estado es obligatorio");
         }
-        Pedido pedido = buscarPedido(id);
+        Pedido pedido = buscarPedidoParaActualizar(id);
         pedido.setEstado(nuevoEstado);
         return toResponse(pedidoRepository.save(pedido));
     }
@@ -135,9 +138,15 @@ public class PedidoServiceImpl implements PedidoService {
         if (metodo == null || !java.util.Set.of("TARJETA", "TRANSFERENCIA", "BILLETERA").contains(metodo)) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Método de pago simulado inválido");
         }
-        Pedido pedido = buscarPedido(id);
+        Pedido pedido = buscarPedidoParaActualizar(id);
         if (!pedido.getCarrito().getUsuario().getEmail().equalsIgnoreCase(emailUsuario)) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Pedido no encontrado");
+        }
+        if (pedido.getFechaPago() != null) {
+            if (metodo.equals(pedido.getMetodoPago())) {
+                return toResponse(pedido);
+            }
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "El pedido ya fue pagado con otro método");
         }
         if (pedido.getEstado() != EstadoPedido.PENDIENTE) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "El pedido no está pendiente de pago");
@@ -148,8 +157,8 @@ public class PedidoServiceImpl implements PedidoService {
         return toResponse(pedidoRepository.save(pedido));
     }
 
-    private Pedido buscarPedido(Long id) {
-        return pedidoRepository.findById(id)
+    private Pedido buscarPedidoParaActualizar(Long id) {
+        return pedidoRepository.findByIdForUpdate(id)
                 .orElseThrow(() -> new ResponseStatusException(
                         HttpStatus.NOT_FOUND, "No existe el pedido con ID " + id));
     }
