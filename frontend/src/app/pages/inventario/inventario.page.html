@@ -39,7 +39,7 @@
         @for (categoria of prods.categorias(); track categoria.id) {
           <button (click)="seleccionarCategoria(categoria.id)" [class.selected]="categoriaSeleccionada() === categoria.id">{{ categoria.nombre }}</button>
         }
-        
+
       </nav>
 
       @if (mensajeExito()) {
@@ -215,4 +215,3 @@
         </div>
       }
     </div>
-  
