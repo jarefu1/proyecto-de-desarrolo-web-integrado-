@@ -126,6 +126,25 @@ class CarritoPedidoReporteIntegrationTest {
     }
 
     @Test
+    void pagoSimuladoDelCliente_conservaElComprobanteAnteReintentos() {
+        usuario.setRol(Rol.CLIENTE);
+        usuarioRepository.save(usuario);
+        CarritoResponse carrito = carritoService.crear(usuario.getId());
+        carritoService.agregarProducto(carrito.id(), new CarritoItemRequest(producto.getId(), 2));
+        PedidoResponse pendiente = pedidoService.crearDesdeCarrito(carrito.id(), usuario.getEmail());
+        assertEquals(EstadoPedido.PENDIENTE, pendiente.estado());
+        assertNull(pendiente.fechaPago());
+
+        PedidoResponse pagado = pedidoService.pagarSimulado(pendiente.id(), usuario.getEmail(), "BILLETERA");
+        assertEquals(EstadoPedido.COMPLETADO, pagado.estado());
+        assertEquals("BILLETERA", pagado.metodoPago());
+        assertNotNull(pagado.fechaPago());
+        assertEquals(0, new BigDecimal("200.00").compareTo(pagado.total()));
+        assertEquals(pagado, pedidoService.pagarSimulado(pendiente.id(), usuario.getEmail(), "BILLETERA"));
+        assertEquals(pagado, pedidoService.listarPorUsuario(usuario.getEmail()).get(0));
+    }
+
+    @Test
     void crearPedido_sinStockSuficiente_debeLanzarExcepcionYNoDescontar() {
         CarritoResponse carrito = carritoService.crear(usuario.getId());
         carrito = carritoService.agregarProducto(
