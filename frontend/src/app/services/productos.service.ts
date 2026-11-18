@@ -145,8 +145,8 @@ export class ProductosService {
     );
   }
 
-  quitarDelCatalogo(id: number): Observable<Producto> {
-    return this.http.patch<Producto>(`${this.url}/${id}`, { activo: false }).pipe(
+  cambiarPublicacion(id: number, activo: boolean): Observable<Producto> {
+    return this.http.patch<Producto>(`${this.url}/${id}`, { activo }).pipe(
       tap((actualizado) =>
         this._productos.update((actual) => actual.map((p) => p.id === id ? actualizado : p))
       )

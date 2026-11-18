@@ -213,13 +213,15 @@ export class InventarioPage implements OnInit {
     });
   }
 
-  quitarDelCatalogo(p: Producto): void {
-    if (!p.activo || !confirm(`¿Quitar ${p.modelo} (${p.codigo}) del catálogo? Seguirá disponible en Inventario.`)) return;
+  cambiarPublicacion(p: Producto): void {
+    const activo = !p.activo;
+    if (!activo && !confirm(`¿Quitar ${p.modelo} (${p.codigo}) del catálogo? Seguirá disponible en Inventario.`)) return;
 
     this.mensajeError.set('');
-    this.prods.quitarDelCatalogo(p.id).subscribe({
+    this.mensajeExito.set('');
+    this.prods.cambiarPublicacion(p.id, activo).subscribe({
       next: () => {
-        this.mensajeExito.set('Mochila quitada del catálogo.');
+        this.mensajeExito.set(activo ? 'Mochila publicada en el catálogo.' : 'Mochila quitada del catálogo.');
         this.actualizarIndicadores();
         setTimeout(() => this.mensajeExito.set(''), 3000);
       },
