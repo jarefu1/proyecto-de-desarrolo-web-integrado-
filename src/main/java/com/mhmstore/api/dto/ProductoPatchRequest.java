@@ -33,6 +33,8 @@ public class ProductoPatchRequest {
     @Positive(message = "El ID del almacén debe ser mayor que cero")
     private Long almacenId;
 
+    private Boolean activo;
+
     public ProductoPatchRequest() {
     }
 
@@ -56,4 +58,7 @@ public class ProductoPatchRequest {
 
     public Long getAlmacenId() { return almacenId; }
     public void setAlmacenId(Long almacenId) { this.almacenId = almacenId; }
+
+    public Boolean getActivo() { return activo; }
+    public void setActivo(Boolean activo) { this.activo = activo; }
 }

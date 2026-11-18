@@ -56,7 +56,7 @@
       } @else if (prods.productos().length === 0) {
         <div class="empty-state">No hay mochilas registradas con este criterio.</div>
       } @else if (vista() === 'lista') {
-        <app-inventario-lista [productos]="prods.productos()" (editar)="abrirModalEditar($event)" (eliminar)="eliminarProducto($event)" (stock)="ajustarStock($event.producto,$event.tipo)"/>
+        <app-inventario-lista [productos]="prods.productos()" (editar)="abrirModalEditar($event)" (quitar)="quitarDelCatalogo($event)" (stock)="ajustarStock($event.producto,$event.tipo)"/>
       } @else {
         <div class="products-grid">
           @for (prod of prods.productos(); track prod.id) {
@@ -89,7 +89,9 @@
                 @if (auth.tienePermiso('GESTIONAR_PRODUCTOS')) {
                   <div class="admin-controls">
                     <button (click)="abrirModalEditar(prod)" class="btn-icon edit" title="Editar">✏️</button>
-                    <button (click)="eliminarProducto(prod)" class="btn-icon delete" title="Eliminar">🗑️</button>
+                    @if (prod.activo) {
+                      <button type="button" (click)="quitarDelCatalogo(prod)" class="btn-icon">Quitar del catálogo</button>
+                    }
                   </div>
                 }
               </div>

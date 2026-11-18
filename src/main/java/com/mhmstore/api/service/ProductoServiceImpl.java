@@ -163,7 +163,12 @@ public class ProductoServiceImpl implements ProductoService {
             Long id,
             ProductoPatchRequest request) {
 
-        Producto producto = buscar(id);
+        Producto producto = productoRepository.findByIdForUpdate(id)
+                .orElseThrow(() -> new ProductoNotFoundException(id));
+
+        if (request.getActivo() != null) {
+            producto.setActivo(request.getActivo());
+        }
 
         if (request.getCodigo() != null) {
             validarCodigoDisponible(request.getCodigo(), id);

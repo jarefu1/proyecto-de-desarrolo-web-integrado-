@@ -213,12 +213,14 @@ export class InventarioPage implements OnInit {
     });
   }
 
-  eliminarProducto(p: Producto): void {
-    if (!confirm(`¿Eliminar la mochila ${p.modelo} (${p.codigo})?`)) return;
+  quitarDelCatalogo(p: Producto): void {
+    if (!p.activo || !confirm(`¿Quitar ${p.modelo} (${p.codigo}) del catálogo? Seguirá disponible en Inventario.`)) return;
 
-    this.prods.eliminar(p.id).subscribe({
+    this.mensajeError.set('');
+    this.prods.quitarDelCatalogo(p.id).subscribe({
       next: () => {
-        this.mensajeExito.set('Mochila eliminada correctamente.'); this.cargarProductos(0); this.actualizarIndicadores();
+        this.mensajeExito.set('Mochila quitada del catálogo.');
+        this.actualizarIndicadores();
         setTimeout(() => this.mensajeExito.set(''), 3000);
       },
       error: (err) => this.mensajeError.set(this.auth.mensajeError(err))
