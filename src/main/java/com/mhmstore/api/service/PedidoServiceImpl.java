@@ -74,6 +74,7 @@ public class PedidoServiceImpl implements PedidoService {
                     .orElseThrow(() -> new ResponseStatusException(
                             HttpStatus.NOT_FOUND, "Producto no encontrado: " + item.getProducto().getId()));
 
+            if (!producto.getActivo()) throw new ResponseStatusException(HttpStatus.CONFLICT, "El producto ya no está publicado: " + producto.getCodigo());
             if (producto.getCantidad() < item.getCantidad()) {
                 throw new ResponseStatusException(
                         HttpStatus.CONFLICT,
@@ -161,6 +162,7 @@ public class PedidoServiceImpl implements PedidoService {
                         i.getProducto().getId(),
                         i.getProducto().getCodigo(),
                         i.getProducto().getModelo(),
+                    i.getProducto().getImagenUrl() == null ? null : "/api/v1/productos/" + i.getProducto().getId() + "/imagen",
                         i.getCantidad(),
                         i.getPrecioUnitario(),
                         i.subtotal()

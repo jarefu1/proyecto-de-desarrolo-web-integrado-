@@ -7,6 +7,7 @@ public record ItemCarritoResponse(
     Long productoId,
     String productoCodigo,
     String productoModelo,
+    String productoImagenUrl,
     Integer cantidad,
     BigDecimal precioUnitario,
     BigDecimal subtotal

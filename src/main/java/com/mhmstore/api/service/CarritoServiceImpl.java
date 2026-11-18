@@ -98,6 +98,8 @@ public class CarritoServiceImpl implements CarritoService {
         Producto producto = productoRepository.findById(request.productoId())
                 .orElseThrow(() -> new ProductoNotFoundException(request.productoId()));
 
+        if (!producto.getActivo()) throw new ResponseStatusException(HttpStatus.CONFLICT, "Este producto ya no está publicado.");
+
         int cantidadExistente = carrito.getItems().stream()
                 .filter(i -> i.getProducto().getId().equals(producto.getId()))
                 .mapToInt(ItemCarrito::getCantidad)
@@ -172,6 +174,7 @@ public class CarritoServiceImpl implements CarritoService {
                         i.getProducto().getId(),
                         i.getProducto().getCodigo(),
                         i.getProducto().getModelo(),
+                    i.getProducto().getImagenUrl() == null ? null : "/api/v1/productos/" + i.getProducto().getId() + "/imagen",
                         i.getCantidad(),
                         i.getPrecioUnitario(),
                         i.subtotal()

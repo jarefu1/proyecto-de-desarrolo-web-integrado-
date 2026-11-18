@@ -6,6 +6,7 @@ export interface ItemCarrito {
   productoId: number;
   productoCodigo: string;
   productoModelo: string;
+  productoImagenUrl?: string | null;
   cantidad: number;
   precioUnitario: number;
   subtotal: number;

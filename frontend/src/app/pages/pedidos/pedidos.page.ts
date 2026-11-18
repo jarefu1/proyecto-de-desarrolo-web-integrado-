@@ -4,6 +4,7 @@ import { CarritoPedidoService } from '../../services/carrito-pedido.service';
 import { AuthService } from '../../services/auth.service';
 import { MetodoPagoSimulado } from '../../models/carrito-pedido.model';
 import { ActivatedRoute } from '@angular/router';
+import { API_BASE } from '../../config/api.config';
 
 @Component({
   selector: 'app-pedidos',
@@ -47,6 +48,8 @@ import { ActivatedRoute } from '@angular/router';
                   <ul>
                     @for (item of ped.items; track item.id) {
                       <li>
+                        @if (item.productoImagenUrl) { <img class="order-thumb" [src]="imagenCompleta(item.productoImagenUrl)" [alt]="item.productoModelo" /> }
+                        @else { <span class="order-thumb placeholder">▧</span> }
                         {{ item.cantidad }}x {{ item.productoModelo }} ({{ item.productoCodigo }}) —
                         S/ {{ item.subtotal | number:'1.2-2' }}
                       </li>
@@ -113,6 +116,9 @@ import { ActivatedRoute } from '@angular/router';
     .pedido-date, .user-info, .items-list ul { color: #777d79; }
     .pedido-total { color: var(--ink); }
     .payment-note { color: #52705f; font-size: .78rem; font-weight: 700; }
+    .pedido-card { background:#fff; border:1px solid #e5e5e5; box-shadow:none; }
+    .pedido-header { border-color:#e8e8e8; }
+    .order-thumb { width:48px;height:48px;object-fit:contain;display:inline-grid;place-items:center;vertical-align:middle;margin-right:.6rem;border-radius:9px;background:#f1f1f1;color:#999; }
     .pay-button, .pay-confirm { border: 0; border-radius: 999px; padding: .8rem 1.1rem; color: white; background: #17191b; font-weight: 700; cursor: pointer; }
     .pay-button { display: flex; align-items: center; justify-content: space-between; gap: 2rem; margin-top: 1rem; }
     .pay-button:hover, .pay-confirm:hover { background: #bc6654; }
@@ -136,6 +142,8 @@ export class PedidosPage implements OnInit {
   private readonly route = inject(ActivatedRoute);
   readonly cargando = signal(false);
   readonly pedidoAPagar = signal<number | null>(null);
+
+  imagenCompleta(url: string): string { return `${API_BASE.replace('/api/v1', '')}${url}`; }
   readonly metodoPago = signal<MetodoPagoSimulado>('TARJETA');
   readonly pagando = signal(false);
   readonly mensajePago = signal('');

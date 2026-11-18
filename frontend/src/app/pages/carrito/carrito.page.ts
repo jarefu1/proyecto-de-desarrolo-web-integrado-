@@ -4,6 +4,7 @@ import { RouterLink } from '@angular/router';
 import { CarritoPedidoService } from '../../services/carrito-pedido.service';
 import { AuthService } from '../../services/auth.service';
 import { Router } from '@angular/router';
+import { API_BASE } from '../../config/api.config';
 
 @Component({
   selector: 'app-carrito',
@@ -48,6 +49,8 @@ import { Router } from '@angular/router';
                 @for (item of carritoService.carrito()!.items; track item.id) {
                   <tr>
                     <td>
+                      @if (item.productoImagenUrl) { <img class="cart-thumb" [src]="imagenCompleta(item.productoImagenUrl)" [alt]="item.productoModelo" /> }
+                      @else { <span class="cart-thumb placeholder">▧</span> }
                       <strong>{{ item.productoModelo }}</strong>
                       <span class="sku">({{ item.productoCodigo }})</span>
                     </td>
@@ -101,12 +104,13 @@ import { Router } from '@angular/router';
     .page-header { margin-bottom: 2rem; }
     .subtitle { color: #64748b; font-size: 0.9rem; margin: 0.25rem 0 0; }
     .cart-layout { display: grid; grid-template-columns: 2fr 1fr; gap: 2rem; align-items: start; }
-    .table { width: 100%; border-collapse: collapse; background: white; border-radius: 8px; overflow: hidden; border: 1px solid #e2e8f0; }
+    .table { width: 100%; border-collapse: collapse; background: white; border-radius: 18px; overflow: hidden; border: 1px solid #e5e5e5; }
     .table th, .table td { padding: 1rem; text-align: left; border-bottom: 1px solid #e2e8f0; }
-    .table th { background: #f8fafc; font-weight: 600; color: #334155; }
+    .table th { background: #fafafa; font-weight: 600; color: #333; }
+    .cart-thumb { width:64px;height:64px;object-fit:contain;border-radius:12px;background:#f1f1f1;display:inline-grid;place-items:center;vertical-align:middle;margin-right:.7rem;color:#999; }
     .sku { color: #64748b; font-size: 0.8rem; margin-left: 0.25rem; }
     .cart-footer-actions { margin-top: 1rem; display: flex; gap: 0.75rem; }
-    .cart-summary { background: white; padding: 1.5rem; border-radius: 12px; border: 1px solid #e2e8f0; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
+    .cart-summary { background: white; padding: 1.5rem; border-radius: 18px; border: 1px solid #e5e5e5; box-shadow: none; }
     .cart-summary h3 { margin-top: 0; color: #1e293b; border-bottom: 1px solid #f1f5f9; padding-bottom: 0.75rem; }
     .summary-line { display: flex; justify-content: space-between; margin-bottom: 0.75rem; font-size: 0.95rem; }
     .summary-line.total { border-top: 2px dashed #cbd5e1; padding-top: 1rem; margin-top: 1rem; font-size: 1.25rem; font-weight: 800; color: #0f172a; }
@@ -114,13 +118,12 @@ import { Router } from '@angular/router';
     .note { display: block; color: #64748b; font-size: 0.75rem; margin-top: 0.75rem; text-align: center; }
     .empty-state { text-align: center; padding: 4rem 1rem; background: white; border-radius: 12px; border: 1px dashed #cbd5e1; }
     .btn { padding: 0.6rem 1rem; border-radius: 8px; border: none; font-weight: 600; cursor: pointer; text-decoration: none; display: inline-block; }
-    .btn-primary { background: #2563eb; color: white; }
-    .btn-secondary { background: #64748b; color: white; }
-    .btn-success { background: #16a34a; color: white; }
+    .btn-primary,.btn-success { background: #050505; color: white; }
+    .btn-secondary { background: #f1f1f1; color: #111; }
     .btn-outline-danger { background: white; border: 1px solid #ef4444; color: #ef4444; }
     .btn-icon.delete { background: #fee2e2; border: 1px solid #fca5a5; border-radius: 6px; padding: 0.35rem 0.5rem; cursor: pointer; }
     .badge { padding: 0.25rem 0.5rem; border-radius: 9999px; font-size: 0.75rem; font-weight: 700; }
-    .badge-info { background: #e0f2fe; color: #0369a1; }
+    .badge-info { background: #f1f1f1; color: #333; }
     .alert { padding: 0.75rem 1rem; border-radius: 8px; margin-bottom: 1.5rem; }
     .alert-success { background: #dcfce7; color: #166534; border: 1px solid #bbf7d0; }
     .alert-error { background: #fee2e2; color: #991b1b; border: 1px solid #fecaca; }
@@ -134,6 +137,8 @@ export class CarritoPage implements OnInit {
   readonly procesando = signal(false);
   readonly mensajeExito = signal('');
   readonly mensajeError = signal('');
+
+  imagenCompleta(url: string): string { return `${API_BASE.replace('/api/v1', '')}${url}`; }
 
   ngOnInit(): void {
     this.carritoService.cargarCarritoUsuario();
