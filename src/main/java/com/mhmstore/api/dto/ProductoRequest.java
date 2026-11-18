@@ -56,6 +56,31 @@ public class ProductoRequest {
     public Boolean getActivo() { return activo; }
     public void setActivo(Boolean value) { activo = value; }
 
+    @jakarta.validation.constraints.Pattern(regexp = "^#[0-9a-fA-F]{6}$")
+    private String colorHex;
+    public String getColorHex() { return colorHex; }
+    public void setColorHex(String value) { colorHex = value; }
+
+    @Size(max = 100)
+    private String material;
+    public String getMaterial() { return material; }
+    public void setMaterial(String value) { material = value; }
+
+    @Size(max = 40)
+    private String capacidad;
+    public String getCapacidad() { return capacidad; }
+    public void setCapacidad(String value) { capacidad = value; }
+
+    @Size(max = 80)
+    private String dimensiones;
+    public String getDimensiones() { return dimensiones; }
+    public void setDimensiones(String value) { dimensiones = value; }
+
+    @Size(max = 40)
+    private String peso;
+    public String getPeso() { return peso; }
+    public void setPeso(String value) { peso = value; }
+
     public String getCodigo() {
         return codigo;
     }

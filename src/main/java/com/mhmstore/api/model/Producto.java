@@ -96,6 +96,40 @@ public class Producto {
     public java.time.LocalDateTime getFechaCreacion() { return fechaCreacion; }
     public java.time.LocalDateTime getFechaActualizacion() { return fechaActualizacion; }
 
+    @jakarta.validation.constraints.Pattern(regexp = "^#[0-9a-fA-F]{6}$")
+    @Column(name = "color_hex", length = 7)
+    private String colorHex;
+    public String getColorHex() { return colorHex; }
+    public void setColorHex(String value) { colorHex = value; }
+
+    @Size(max = 100)
+    @Column(name = "material", length = 100)
+    private String material;
+    public String getMaterial() { return material; }
+    public void setMaterial(String value) { material = value; }
+
+    @Size(max = 40)
+    @Column(name = "capacidad", length = 40)
+    private String capacidad;
+    public String getCapacidad() { return capacidad; }
+    public void setCapacidad(String value) { capacidad = value; }
+
+    @Size(max = 80)
+    @Column(name = "dimensiones", length = 80)
+    private String dimensiones;
+    public String getDimensiones() { return dimensiones; }
+    public void setDimensiones(String value) { dimensiones = value; }
+
+    @Size(max = 40)
+    @Column(name = "peso", length = 40)
+    private String peso;
+    public String getPeso() { return peso; }
+    public void setPeso(String value) { peso = value; }
+
+    @OneToMany(mappedBy = "producto", cascade = CascadeType.REMOVE)
+    private java.util.List<ProductoImagen> galeria = new java.util.ArrayList<>();
+    public java.util.List<ProductoImagen> getGaleria() { return galeria; }
+
     public Producto() {
     }
 

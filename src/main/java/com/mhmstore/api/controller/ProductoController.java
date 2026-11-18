@@ -48,13 +48,21 @@ public class ProductoController {
             @RequestParam(required = false) Boolean disponible,
             @RequestParam(required = false) Boolean stockBajo,
             @RequestParam(required = false) String q,
+            @RequestParam(required = false) java.math.BigDecimal precioMin,
+            @RequestParam(required = false) java.math.BigDecimal precioMax,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size) {
         if (page < 0 || size < 1 || size > 100) {
             throw new org.springframework.web.server.ResponseStatusException(
                     org.springframework.http.HttpStatus.BAD_REQUEST, "Paginación inválida (size máximo: 100)");
         }
-        return ResponseEntity.ok(service.listarPaginado(almacenId, categoriaId, disponible, stockBajo, q,
+        if ((precioMin != null && precioMin.signum() < 0)
+                || (precioMax != null && precioMax.signum() < 0)
+                || (precioMin != null && precioMax != null && precioMin.compareTo(precioMax) > 0)) {
+            throw new org.springframework.web.server.ResponseStatusException(
+                    org.springframework.http.HttpStatus.BAD_REQUEST, "El rango de precios no es válido.");
+        }
+        return ResponseEntity.ok(service.listarPaginado(almacenId, categoriaId, disponible, stockBajo, q, precioMin, precioMax,
                 PageRequest.of(page, size, Sort.by("id").ascending())));
     }
 
@@ -66,8 +74,8 @@ public class ProductoController {
     }
 
     @PostMapping(value = "/{id}/imagen", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ResponseEntity<ProductoResponse> guardarImagen(@PathVariable Long id, @RequestPart("imagen") MultipartFile imagen) {
-        return ResponseEntity.ok(service.guardarImagen(id, imagen));
+    public ResponseEntity<ProductoResponse> guardarImagen(@PathVariable Long id, @RequestPart("imagen") MultipartFile imagen, @RequestParam(required = false) Long varianteId) {
+        return ResponseEntity.ok(service.guardarImagen(id, varianteId, imagen));
     }
 
     @GetMapping(value = "/{id}/imagen")

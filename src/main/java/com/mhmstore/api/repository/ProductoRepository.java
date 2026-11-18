@@ -25,6 +25,8 @@ public interface ProductoRepository
         WHERE (:soloPublicos = false OR p.activo = true)
           AND (:almacenId IS NULL OR p.almacen.id = :almacenId)
           AND (:categoriaId IS NULL OR p.categoria.id = :categoriaId)
+          AND (:precioMin IS NULL OR p.precio >= :precioMin)
+          AND (:precioMax IS NULL OR p.precio <= :precioMax)
           AND (:disponible IS NULL OR (:disponible = true AND p.cantidad > 0)
                OR (:disponible = false AND p.cantidad = 0))
           AND (:stockBajo IS NULL OR (:stockBajo = true AND p.cantidad > 0 AND p.cantidad <= p.stockMinimo)
@@ -41,8 +43,12 @@ public interface ProductoRepository
             @Param("stockBajo") Boolean stockBajo,
             @Param("soloPublicos") boolean soloPublicos,
             @Param("query") String query,
+            @Param("precioMin") java.math.BigDecimal precioMin,
+            @Param("precioMax") java.math.BigDecimal precioMax,
             Pageable pageable);
 
+    List<Producto> findByModeloIgnoreCaseAndCategoriaIdAndActivoTrueOrderByIdAsc(String modelo, Long categoriaId);
+    List<Producto> findByModeloIgnoreCaseAndCategoriaIdOrderByIdAsc(String modelo, Long categoriaId);
     long countByCategoriaId(Long id);
     @Query("select count(p) from Producto p where p.cantidad > p.stockMinimo")
     long contarDisponibles();
