@@ -62,6 +62,8 @@ import { API_BASE } from '../../config/api.config';
                 </div>
                 @if (ped.metodoPago && ped.fechaPago) {
                   <p class="payment-note">✓ Pago simulado completado · {{ nombreMetodo(ped.metodoPago) }}</p>
+                }
+                @if (ped.estado === 'COMPLETADO' || ped.fechaPago) {
                   <button type="button" class="pay-button" (click)="verBoleta(ped)">Ver boleta</button>
                 }
                 @if (auth.rol() === 'CLIENTE' && ped.estado === 'PENDIENTE' && !ped.fechaPago) {
@@ -80,8 +82,8 @@ import { API_BASE } from '../../config/api.config';
           @if (pagoAprobado()) {
             <p class="payment-success" role="status">Pago simulado aprobado. Tu boleta está lista.</p>
           }
-          <p>MHM Store · Pedido #{{ pedido.id }} · {{ pedido.fechaPago | date:'dd/MM/yyyy HH:mm' }}</p>
-          <p>Cliente: {{ pedido.usuarioEmail }}<br>Método: {{ nombreMetodo(pedido.metodoPago ?? '') }}</p>
+          <p>MHM Store · Pedido #{{ pedido.id }} · {{ (pedido.fechaPago ?? pedido.fechaEnvio) | date:'dd/MM/yyyy HH:mm' }}</p>
+          <p>Cliente: {{ pedido.usuarioEmail }}<br>Método: {{ nombreMetodo(pedido.metodoPago) }}</p>
           <ul class="receipt-items">
             @for (item of pedido.items; track item.id) {
               <li>
@@ -90,7 +92,7 @@ import { API_BASE } from '../../config/api.config';
               </li>
             }
           </ul>
-          <p class="receipt-total">Total pagado: S/ {{ pedido.total | number:'1.2-2' }}</p>
+          <p class="receipt-total">{{ pedido.fechaPago ? 'Total pagado' : 'Total del pedido' }}: S/ {{ pedido.total | number:'1.2-2' }}</p>
           <p>Comprobante de demostración, sin validez tributaria.</p>
           <button type="button" class="pay-confirm" [disabled]="descargando()" (click)="descargarBoleta(pedido)">
             {{ descargando() ? 'Preparando PDF…' : 'Descargar boleta en PDF' }}
@@ -203,7 +205,8 @@ export class PedidosPage implements OnInit {
   readonly descargando = signal(false);
   readonly errorDescarga = signal('');
 
-  nombreMetodo(metodo: string): string {
+  nombreMetodo(metodo: string | null): string {
+    if (!metodo) return 'Sin método registrado';
     return ({ TARJETA: 'Tarjeta de prueba', TRANSFERENCIA: 'Transferencia', BILLETERA: 'Billetera digital' } as Record<string, string>)[metodo] ?? metodo;
   }
 
@@ -251,7 +254,7 @@ export class PedidosPage implements OnInit {
   }
 
   async descargarBoleta(pedido: Pedido): Promise<void> {
-    if (this.descargando() || !pedido.fechaPago || !pedido.metodoPago) return;
+    if (this.descargando()) return;
     this.descargando.set(true);
     this.errorDescarga.set('');
     try {
@@ -269,8 +272,12 @@ export class PedidosPage implements OnInit {
       next: (pedidos) => {
         this.cargando.set(false);
         const pedidoId = Number(this.route.snapshot.queryParamMap.get('pedido'));
-        const pendiente = pedidos.find(p => p.id === pedidoId && p.estado === 'PENDIENTE' && !p.fechaPago);
-        if (pendiente && this.auth.rol() === 'CLIENTE') this.abrirPago(pendiente);
+        const pedido = pedidos.find(p => p.id === pedidoId);
+        if (pedido?.estado === 'COMPLETADO' || pedido?.fechaPago) {
+          this.verBoleta(pedido);
+        } else if (pedido?.estado === 'PENDIENTE' && this.auth.rol() === 'CLIENTE') {
+          this.abrirPago(pedido);
+        }
       },
       error: (error) => {
         this.cargando.set(false);

@@ -10,14 +10,13 @@ function soles(monto: number): string {
 }
 
 export function guardarBoletaPdf(pedido: Pedido, metodo: string): void {
-  if (!pedido.fechaPago) throw new Error('El pedido no tiene fecha de pago.');
-
   const doc = new jsPDF();
   doc.setFontSize(19);
   doc.text(`MHM Store | Boleta simulada B-${pedido.id}`, 14, 18);
   doc.setFontSize(10);
   doc.text('Comprobante de demostración, sin validez tributaria.', 14, 25);
-  doc.text(`Pedido #${pedido.id} | Pago: ${fecha.format(new Date(pedido.fechaPago))}`, 14, 34);
+  const fechaPedido = fecha.format(new Date(pedido.fechaPago ?? pedido.fechaEnvio));
+  doc.text(`Pedido #${pedido.id} | ${pedido.fechaPago ? 'Pago' : 'Fecha del pedido'}: ${fechaPedido}`, 14, 34);
   doc.text(`Método: ${metodo}`, 14, 40);
 
   const cliente = doc.splitTextToSize(`Cliente: ${pedido.usuarioEmail}`, 182);
@@ -32,7 +31,11 @@ export function guardarBoletaPdf(pedido: Pedido, metodo: string): void {
       soles(item.precioUnitario),
       soles(item.subtotal)
     ]),
-    foot: [[{ content: 'Total pagado', colSpan: 3, styles: { halign: 'right' } }, soles(pedido.total)]],
+    foot: [[{
+      content: pedido.fechaPago ? 'Total pagado' : 'Total del pedido',
+      colSpan: 3,
+      styles: { halign: 'right' }
+    }, soles(pedido.total)]],
     showFoot: 'lastPage',
     headStyles: { fillColor: [23, 25, 27] },
     footStyles: { fillColor: [23, 25, 27], halign: 'right' },
